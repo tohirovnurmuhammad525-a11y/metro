@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Metrologiya Test">
+<title>Metrologiya — Guruh Testi</title>
+<style>
+:root {
+  --bg: #0f1117; --surface: #1a1d27; --surface2: #22263a;
+  --border: #2e3350; --accent: #4f6ef7; --accent2: #6c8afb;
+  --green: #22c55e; --red: #ef4444; --yellow: #facc15;
+  --text: #e8eaf6; --muted: #7b83ab; --radius: 12px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  background: var(--bg); color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh; -webkit-text-size-adjust: 100%;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.screen { display: none; min-height: 100vh; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+.screen.active { display: flex; }
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 32px 24px; width: 100%; max-width: 420px;
+  box-shadow: 0 20px 60px rgba(79,110,247,0.1);
+}
+.logo { font-size: 44px; text-align: center; margin-bottom: 14px; }
+h1 { font-size: 22px; font-weight: 800; text-align: center; margin-bottom: 6px; }
+h2 { font-size: 18px; font-weight: 800; margin-bottom: 16px; }
+.sub { color: var(--muted); font-size: 13px; text-align: center; margin-bottom: 24px; }
+.field { margin-bottom: 14px; }
+.field label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 6px; }
+.field input, .field select {
+  width: 100%; padding: 13px 14px; background: var(--surface2);
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  color: var(--text); font-size: 16px; outline: none; font-family: inherit;
+  -webkit-appearance: none;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.btn {
+  width: 100%; padding: 15px; background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border: none; border-radius: var(--radius); color: #fff; font-size: 16px;
+  font-weight: 700; cursor: pointer; font-family: inherit; min-height: 52px;
+  margin-top: 6px;
+}
+.btn:active { transform: scale(0.97); }
+.btn-outline {
+  width: 100%; padding: 13px; background: transparent;
+  border: 1.5px solid var(--border); border-radius: var(--radius);
+  color: var(--muted); font-size: 14px; font-weight: 600;
+  cursor: pointer; font-family: inherit; min-height: 48px; margin-top: 8px;
+}
+.btn-outline:active { background: var(--surface2); }
+.tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; font-size: 13px; color: var(--muted);
+}
+.tag.admin { border-color: var(--accent); color: var(--accent2); }
+.tag.student { border-color: var(--green); color: var(--green); }
+
+/* WAITING SCREEN */
+.waiting-box { text-align: center; }
+.waiting-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.waiting-sub { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+.session-info {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 20px; text-align: left;
+}
+.session-info .si-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+.session-info .si-row:last-child { margin-bottom: 0; }
+.session-info .si-label { color: var(--muted); }
+.session-info .si-val { font-weight: 700; }
+.players-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.player-chip {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 99px; padding: 8px 14px; font-size: 13px; font-weight: 600;
+  display: flex; align-items: center; gap: 6px;
+}
+.player-chip.me { border-color: var(--accent); color: var(--accent2); }
+.player-chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+.countdown-big {
+  font-size: 64px; font-weight: 800; text-align: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  margin: 10px 0;
+}
+
+/* QUIZ */
+#quiz-screen { display: none; flex-direction: column; padding: 14px; padding-bottom: calc(16px + env(safe-area-inset-bottom)); }
+.quiz-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; max-width: 720px; width: 100%; margin-left: auto; margin-right: auto; }
+.progress-wrap { flex: 1; }
+.prog-label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: flex; justify-content: space-between; }
+.prog-bar { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 99px; transition: width .4s; }
+.timer-badge {
+  background: var(--surface2); border: 1.5px solid var(--border);
+  border-radius: 10px; padding: 8px 12px; font-size: 18px; font-weight: 700;
+  min-width: 56px; text-align: center; font-variant-numeric: tabular-nums;
+}
+.timer-badge.urgent { color: var(--red); border-color: var(--red); animation: pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+.q-card { max-width: 720px; width: 100%; margin: 0 auto; background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px 18px; }
+.q-num { font-size: 11px; font-weight: 700; color: var(--accent2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
+.q-text { font-size: 15px; line-height: 1.65; margin-bottom: 20px; font-weight: 500; }
+.opts { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.opt-btn {
+  width: 100%; text-align: left; padding: 13px 15px; background: var(--surface2);
+  border: 1.5px solid var(--border); border-radius: var(--radius); color: var(--text);
+  font-size: 14px; cursor: pointer; display: flex; align-items: flex-start;
+  gap: 10px; line-height: 1.5; font-family: inherit; -webkit-appearance: none; min-height: 50px;
+  transition: border-color .15s, background .15s;
+}
+.opt-btn:hover:not(:disabled) { border-color: var(--accent); background: rgba(79,110,247,.08); }
+.opt-btn:active:not(:disabled) { transform: scale(0.98); }
+.opt-letter {
+  min-width: 24px; height: 24px; border-radius: 6px; background: var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0; margin-top: 2px;
+}
+.opt-btn.correct { border-color: var(--green); background: rgba(34,197,94,.1); }
+.opt-btn.correct .opt-letter { background: var(--green); color: #fff; }
+.opt-btn.wrong { border-color: var(--red); background: rgba(239,68,68,.1); }
+.opt-btn.wrong .opt-letter { background: var(--red); color: #fff; }
+.opt-btn:disabled { cursor: default; }
+
+/* Live answers bar */
+.live-bar {
+  max-width: 720px; width: 100%; margin: 10px auto 0;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 16px;
+}
+.live-bar-title { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.live-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.live-chip {
+  font-size: 12px; font-weight: 600; padding: 5px 10px;
+  border-radius: 99px; border: 1.5px solid var(--border);
+  background: var(--surface2); color: var(--muted);
+  transition: all .3s;
+}
+.live-chip.answered { border-color: var(--accent); color: var(--accent2); }
+.live-chip.correct { border-color: var(--green); color: var(--green); background: rgba(34,197,94,.1); }
+.live-chip.wrong { border-color: var(--red); color: var(--red); background: rgba(239,68,68,.1); }
+.live-chip.skipped { border-color: var(--yellow); color: var(--yellow); }
+
+/* Yangi live chip rows */
+.live-chips { display: flex; flex-direction: column; gap: 6px; }
+.live-chip-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 12px; border-radius: 10px;
+  border: 1.5px solid var(--border); background: var(--surface2);
+  font-size: 13px; transition: all .3s;
+}
+.live-chip-row.pending { color: var(--muted); border-color: var(--border); }
+.live-chip-row.correct { border-color: var(--green); background: rgba(34,197,94,.08); }
+.live-chip-row.wrong { border-color: var(--red); background: rgba(239,68,68,.08); }
+.live-chip-row.skipped { border-color: var(--yellow); background: rgba(250,204,21,.08); }
+.lc-icon { font-size: 15px; flex-shrink: 0; }
+.lc-name { font-weight: 700; color: var(--text); flex-shrink: 0; min-width: 60px; }
+.lc-opt {
+  flex: 1; color: var(--muted); font-size: 12px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  border-left: 1.5px solid var(--border); padding-left: 8px; margin-left: 2px;
+}
+.live-chip-row.correct .lc-opt { color: var(--green); border-left-color: var(--green); }
+.live-chip-row.wrong .lc-opt { color: var(--red); border-left-color: var(--red); }
+.live-chip-row.skipped .lc-opt { color: var(--yellow); border-left-color: var(--yellow); }
+
+.nav-row { max-width: 720px; width: 100%; margin: 12px auto 0; display: flex; justify-content: flex-end; }
+.next-btn {
+  padding: 11px 26px; background: var(--accent); border: none;
+  border-radius: var(--radius); color: #fff; font-size: 14px; font-weight: 600;
+  cursor: pointer; display: none; font-family: inherit; min-height: 46px;
+}
+
+/* RESULT */
+#result-screen { display: none; flex-direction: column; align-items: center; padding: 20px 16px; padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+.result-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 28px 18px; width: 100%; max-width: 720px; }
+.big-pct {
+  font-size: 64px; font-weight: 800; text-align: center; line-height: 1;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.result-sub { text-align: center; color: var(--muted); font-size: 14px; margin-top: 6px; margin-bottom: 22px; }
+.stats-row { display: flex; gap: 8px; margin-bottom: 20px; }
+.stat { flex: 1; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 8px; text-align: center; }
+.stat .v { font-size: 22px; font-weight: 700; }
+.stat .v.g { color: var(--green); } .stat .v.r { color: var(--red); } .stat .v.y { color: var(--yellow); }
+.stat .l { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+.lb-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+.lb-item { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 7px; }
+.lb-item.me { border-color: var(--accent); background: rgba(79,110,247,.07); }
+.lb-rank { font-size: 18px; min-width: 26px; text-align: center; }
+.lb-name { flex: 1; font-weight: 600; font-size: 14px; }
+.lb-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.lb-score { font-size: 18px; font-weight: 800; color: var(--accent2); }
+.lb-empty { color: var(--muted); font-size: 14px; padding: 16px; text-align: center; }
+
+.toast {
+  position: fixed; bottom: calc(20px + env(safe-area-inset-bottom)); left: 50%;
+  transform: translateX(-50%); background: var(--surface); border: 1px solid var(--border);
+  border-radius: 99px; padding: 10px 20px; font-size: 13px; color: var(--muted);
+  display: none; white-space: nowrap; z-index: 100;
+}
+
+/* Errors table */
+.errors-section { margin-top: 20px; }
+.errors-toggle { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; cursor: pointer; width: 100%; text-align: left; color: var(--text); font-size: 14px; font-weight: 600; font-family: inherit; display: flex; justify-content: space-between; align-items: center; }
+.errors-toggle:hover { border-color: var(--accent); }
+.errors-body { display: none; margin-top: 8px; }
+.errors-body.open { display: block; }
+.err-player-block { margin-bottom: 12px; }
+.err-player-name { font-size: 13px; font-weight: 700; color: var(--accent2); margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+.err-q-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 6px; font-size: 13px; }
+.err-q-item.is-wrong { border-color: var(--red); }
+.err-q-item.is-skipped { border-color: var(--yellow); }
+.err-q-text { color: var(--text); line-height: 1.5; margin-bottom: 6px; font-weight: 500; }
+.err-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.err-badge { padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.err-badge.wrong-ans { background: rgba(239,68,68,.15); color: var(--red); border: 1px solid var(--red); }
+.err-badge.correct-ans { background: rgba(34,197,94,.15); color: var(--green); border: 1px solid var(--green); }
+.err-badge.skipped-ans { background: rgba(250,204,21,.15); color: var(--yellow); border: 1px solid var(--yellow); }
+.no-errors { color: var(--green); font-size: 13px; padding: 12px; text-align: center; background: rgba(34,197,94,.08); border-radius: var(--radius); border: 1px solid var(--green); }
+
+/* Admin badge */
+.admin-badge {
+  background: rgba(79,110,247,.15); border: 1px solid var(--accent);
+  color: var(--accent2); border-radius: 8px; padding: 8px 14px;
+  font-size: 13px; font-weight: 700; margin-bottom: 16px; text-align: center;
+}
+</style>
+</head>
+<body>
+
+<!-- 1. ROLE SCREEN -->
+<div id="role-screen" class="screen active">
+  <div class="card">
+    <div class="logo">📐</div>
+    <h1>Metrologiya Test</h1>
+    <p class="sub">Siz kim sifatida kirasiz?</p>
+    <button class="btn" onclick="showScreen('admin-login')">🔑 Admin (o'qituvchi)</button>
+    <button class="btn-outline" onclick="showScreen('student-name')">👨‍🎓 O'quvchi sifatida kirish</button>
+  </div>
+</div>
+
+<!-- 2. ADMIN LOGIN -->
+<div id="admin-login" class="screen">
+  <div class="card">
+    <div class="tag admin" style="margin-bottom:16px;">🔑 Admin kirish</div>
+    <h2>Admin paroli</h2>
+    <div class="field">
+      <label>Parol</label>
+      <input type="password" id="admin-pass-input" placeholder="Admin paroli" autocomplete="off">
+    </div>
+    <button class="btn" onclick="adminLogin()">Kirish →</button>
+    <button class="btn-outline" onclick="showScreen('role-screen')">← Orqaga</button>
+  </div>
+</div>
+
+<!-- 3. ADMIN PANEL -->
+<div id="admin-panel" class="screen">
+  <div class="card">
+    <div class="admin-badge">🔑 Admin panel</div>
+    <h2>Test sozlamalari</h2>
+    <div class="field">
+      <label>O'quvchilar uchun kalit so'z</label>
+      <input type="text" id="session-key-input" placeholder="mas: metro2025" autocomplete="off" maxlength="20">
+    </div>
+    <div class="field">
+      <label>Savol guruhi</label>
+      <select id="admin-group-input">
+        <option value="0,30">1-guruh: 1–30-savollar</option>
+        <option value="30,60">2-guruh: 31–60-savollar</option>
+        <option value="60,90">3-guruh: 61–90-savollar</option>
+        <option value="90,120">4-guruh: 91–120-savollar</option>
+        <option value="120,150">5-guruh: 121–150-savollar</option>
+        <option value="150,180">6-guruh: 151–180-savollar</option>
+        <option value="180,210">7-guruh: 181–210-savollar</option>
+        <option value="210,231">8-guruh: 211–231-savollar</option>
+        <option value="random">🎲 Tasodifiy (barcha)</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Har savolga vaqt (soniya)</label>
+      <input type="number" id="admin-time-input" min="10" max="300" value="60">
+    </div>
+    <div class="field">
+      <label>Maksimal o'quvchilar soni</label>
+      <input type="number" id="admin-maxplayers" min="2" max="30" value="10">
+    </div>
+    <button class="btn" onclick="adminCreateSession()">✅ Sessiya yaratish</button>
+    <button class="btn-outline" onclick="showScreen('role-screen')">← Orqaga</button>
+  </div>
+</div>
+
+<!-- 4. ADMIN WAITING (session created) -->
+<div id="admin-waiting" class="screen">
+  <div class="card">
+    <div class="admin-badge">🔑 Admin — Kutish zali</div>
+    <div class="waiting-box">
+      <div class="waiting-title">O'quvchilar kutilmoqda</div>
+      <div class="waiting-sub">Kalit so'zni o'quvchilarga yuboring</div>
+      <div class="session-info">
+        <div class="si-row"><span class="si-label">🔑 Kalit so'z</span><span class="si-val" id="aw-key">—</span></div>
+        <div class="si-row"><span class="si-label">📚 Guruh</span><span class="si-val" id="aw-group">—</span></div>
+        <div class="si-row"><span class="si-label">⏱ Vaqt/savol</span><span class="si-val" id="aw-time">—</span></div>
+        <div class="si-row"><span class="si-label">👥 Ulangan</span><span class="si-val" id="aw-count">0</span></div>
+      </div>
+      <div class="lb-title">👥 Kirgan o'quvchilar</div>
+      <div class="players-grid" id="aw-players"></div>
+      <button class="btn" onclick="adminStartTest()" id="admin-start-btn">🚀 Testni boshlash</button>
+      <button class="btn-outline" onclick="adminCancel()">❌ Bekor qilish</button>
+    </div>
+  </div>
+</div>
+
+<!-- 5. STUDENT NAME -->
+<div id="student-name" class="screen">
+  <div class="card">
+    <div class="tag student" style="margin-bottom:16px;">👨‍🎓 O'quvchi</div>
+    <h2>Ismingizni kiriting</h2>
+    <div class="field">
+      <input type="text" id="student-name-input" placeholder="Ismingiz" maxlength="30" autocomplete="off">
+    </div>
+    <button class="btn" onclick="goStudentKey()">Davom etish →</button>
+    <button class="btn-outline" onclick="showScreen('role-screen')">← Orqaga</button>
+  </div>
+</div>
+
+<!-- 6. STUDENT KEY -->
+<div id="student-key" class="screen">
+  <div class="card">
+    <div class="tag student" style="margin-bottom:16px;">👨‍🎓 O'quvchi</div>
+    <h2>Kalit so'z</h2>
+    <p class="sub" style="text-align:left;margin-bottom:14px;">Admindan kalit so'zni oling</p>
+    <div class="field">
+      <input type="text" id="student-key-input" placeholder="Kalit so'z" autocomplete="off">
+    </div>
+    <button class="btn" onclick="studentJoin()">Kirish →</button>
+    <button class="btn-outline" onclick="showScreen('student-name')">← Orqaga</button>
+  </div>
+</div>
+
+<!-- 7. STUDENT WAITING -->
+<div id="student-waiting" class="screen">
+  <div class="card">
+    <div class="tag student" style="margin-bottom:16px;">👨‍🎓 Kutish zali</div>
+    <div class="waiting-box">
+      <div class="waiting-title">Admin testni boshlaguncha kuting</div>
+      <div class="session-info">
+        <div class="si-row"><span class="si-label">📚 Guruh</span><span class="si-val" id="sw-group">—</span></div>
+        <div class="si-row"><span class="si-label">⏱ Vaqt/savol</span><span class="si-val" id="sw-time">—</span></div>
+        <div class="si-row"><span class="si-label">👥 Ulangan</span><span class="si-val" id="sw-count">—</span></div>
+      </div>
+      <div class="lb-title">👥 Qatnashchilar</div>
+      <div class="players-grid" id="sw-players"></div>
+      <div style="color:var(--muted);font-size:13px;margin-top:12px;">⏳ Admin testni boshlasin...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 8. COUNTDOWN -->
+<div id="countdown-screen" class="screen">
+  <div class="card" style="text-align:center;">
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px;">Test boshlanmoqda!</div>
+    <div class="countdown-big" id="countdown-num">3</div>
+    <div style="color:var(--muted);font-size:14px;">Tayyor bo'ling...</div>
+  </div>
+</div>
+
+<!-- 9. QUIZ SCREEN -->
+<div id="quiz-screen">
+  <div class="quiz-header">
+    <div class="progress-wrap">
+      <div class="prog-label">
+        <span id="prog-text">1 / 30</span>
+        <span id="score-live">✅ 0 &nbsp; ❌ 0</span>
+      </div>
+      <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+    <div class="timer-badge" id="timer-badge">60</div>
+  </div>
+  <div class="q-card">
+    <div class="q-num" id="q-number">Savol 1</div>
+    <div class="q-text" id="q-text"></div>
+    <ul class="opts" id="options-list"></ul>
+  </div>
+  <!-- Live javoblar -->
+  <div class="live-bar">
+    <div class="live-bar-title">⚡ Jonli natijalar</div>
+    <div class="live-chips" id="live-chips"></div>
+  </div>
+  <div class="nav-row">
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">Keyingi ▶</button>
+  </div>
+</div>
+
+<!-- 10. RESULT -->
+<div id="result-screen">
+  <div class="result-card">
+    <div class="big-pct" id="big-score">0%</div>
+    <div class="result-sub" id="score-label">Natijangiz</div>
+    <div class="stats-row">
+      <div class="stat"><div class="v g" id="r-correct">0</div><div class="l">To'g'ri</div></div>
+      <div class="stat"><div class="v r" id="r-wrong">0</div><div class="l">Noto'g'ri</div></div>
+      <div class="stat"><div class="v y" id="r-skipped">0</div><div class="l">O'tkazildi</div></div>
+      <div class="stat"><div class="v" id="r-total">0</div><div class="l">Jami</div></div>
+    </div>
+    <div id="waiting-lb-msg" style="display:none; text-align:center; padding:20px 0;">
+      <div style="font-size:28px; margin-bottom:8px;">⏳</div>
+      <div style="font-weight:700; font-size:15px; margin-bottom:4px;">Boshqalar tugatishini kutmoqda...</div>
+      <div style="color:var(--muted); font-size:13px;" id="waiting-lb-sub">— / — kishi yakunladi</div>
+    </div>
+    <div id="final-lb-section" style="display:none;">
+      <div class="lb-title">🏆 Yakuniy reyting</div>
+      <div id="session-lb"></div>
+      <div class="lb-title" style="margin-top:16px;">📊 Guruh reytingi (barcha o'tkazilganlar)</div>
+      <div id="global-lb"></div>
+    </div>
+    <div class="errors-section">
+      <button class="errors-toggle" onclick="toggleErrors()">
+        <span>📋 Xatolar tafsiloti (kim nimada yanglishdi)</span>
+        <span id="errors-arrow">▼</span>
+      </button>
+      <div class="errors-body" id="errors-body">
+        <div id="errors-content" style="margin-top:8px;">⏳ Yuklanmoqda...</div>
+      </div>
+    </div>
+    <button class="btn" style="margin-top:16px;" onclick="showScreen('role-screen')">🔄 Bosh sahifa</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== CONFIG =====================
+const ADMIN_PASSWORD = "admin2025"; // <-- Admin paroli (o'zgartirishingiz mumkin)
+const SUPABASE_URL = 'https://codypibnvopnregnlqjk.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvZHlwaWJudm9wbnJlZ25scWprIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNDU2MTcsImV4cCI6MjA5NjkyMTYxN30.9ME1gljsSs_AzTHeig5HcqCcPU_2mtfgYqs1_9mmjNE';
+
+// ===================== STATE =====================
+let userName = '';
+let isAdmin = false;
+let sessionKey = '';
+let sessionData = null; // {group, perTime, maxPlayers, questions}
+let quiz = [];
+let current = 0;
+let score = 0;
+let skipped = 0;
+let perTime = 60;
+let timer = null;
+let timeLeft = 0;
+let answered = false;
+let quizStartTime = 0;
+let quizElapsed = 0;
+let currentGroup = 'random';
+let sessionPlayers = {}; // {name: {answered, correct, wrong}}
+let pollInterval = null;
+let lbPollInterval = null;
+const LETTERS = ['A','B','D','E'];
+
+// ===================== UTILS =====================
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+function showToast(msg, dur=2000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.display = 'block';
+  setTimeout(() => t.style.display = 'none', dur);
+}
+
+function showScreen(id) {
+  if (lbPollInterval) { clearInterval(lbPollInterval); lbPollInterval = null; }
+  document.querySelectorAll('.screen').forEach(s => { s.style.display = 'none'; s.classList.remove('active'); });
+  ['quiz-screen','result-screen'].forEach(id2 => document.getElementById(id2).style.display = 'none');
+  const el = document.getElementById(id);
+  if (id === 'quiz-screen') el.style.display = 'flex';
+  else if (id === 'result-screen') el.style.display = 'flex';
+  else { el.style.display = 'flex'; el.classList.add('active'); }
+  window.scrollTo(0, 0);
+  if (pollInterval && !['admin-waiting','student-waiting'].includes(id)) {
+    clearInterval(pollInterval); pollInterval = null;
+  }
+}
+
+function getGroupLabel(g) {
+  if (g === 'random') return '🎲 Tasodifiy';
+  const [from, to] = g.split(',').map(Number);
+  return `${Math.floor(from/30)+1}-guruh (${from+1}–${to})`;
+}
+
+function formatTime(sec) {
+  const m = Math.floor(sec/60), s = sec%60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+// ===================== LOCAL STORAGE (global leaderboard) =====================
+function getGlobalResults() {
+  try { return JSON.parse(localStorage.getItem('metro_all_results') || '{}'); } catch { return {}; }
+}
+
+function saveGlobalResult(groupVal, pct, correct, total, elapsed) {
+  const all = getGlobalResults();
+  const key = getGroupLabel(groupVal);
+  if (!all[key]) all[key] = [];
+  const existing = all[key].findIndex(r => r.name === userName);
+  const entry = { name: userName, pct, correct, total, elapsed };
+  if (existing >= 0) {
+    const old = all[key][existing];
+    if (pct > old.pct || (pct === old.pct && elapsed < old.elapsed)) all[key][existing] = entry;
+  } else {
+    all[key].push(entry);
+  }
+  localStorage.setItem('metro_all_results', JSON.stringify(all));
+}
+
+// ===================== SUPABASE API =====================
+const SB = {
+  h: {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+  },
+  hw: {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_KEY,
+    'Prefer': 'return=minimal'
+  },
+
+  async getSession(key) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${key}&select=*`, { headers: this.h });
+      if (!r.ok) { console.error('getSession error:', r.status); return null; }
+      const data = await r.json();
+      return data[0] || null;
+    } catch(e) { console.error('getSession network error:', e); return null; }
+  },
+
+  async createSession(key, group, perTime, maxPlayers, questions) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/sessions`, {
+        method: 'POST', headers: this.hw,
+        body: JSON.stringify({ id: key, group_val: group, per_time: perTime, max_players: maxPlayers, questions, status: 'waiting' })
+      });
+      if (!r.ok) {
+        const errText = await r.text();
+        console.error('createSession error:', r.status, errText);
+        showToast('❌ Xatolik: ' + r.status + ' — ' + errText.slice(0, 80));
+        return false;
+      }
+      return true;
+    } catch(e) {
+      console.error('createSession network error:', e);
+      showToast('❌ Tarmoq xatosi: ' + e.message);
+      return false;
+    }
+  },
+
+  async updateSessionStatus(key, status) {
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${key}`, {
+        method: 'PATCH', headers: this.hw,
+        body: JSON.stringify({ status })
+      });
+      if (!r.ok) { const t = await r.text(); console.error('updateSessionStatus error:', r.status, t); }
+      return r.ok;
+    } catch(e) { console.error('updateSessionStatus network error:', e); return false; }
+  },
+
+  async updateCurrentQuestion(key, qIdx) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${key}`, {
+        method: 'PATCH', headers: this.hw,
+        body: JSON.stringify({ current_question: qIdx, status: 'started' })
+      });
+    } catch(e) {}
+  },
+
+  async getPlayers(key) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/players?session_id=eq.${key}&select=*&order=joined_at.asc`, { headers: this.h });
+    return await r.json();
+  },
+
+  async addPlayer(key, name, joinQuestion) {
+    const existing = await fetch(`${SUPABASE_URL}/rest/v1/players?session_id=eq.${key}&name=eq.${encodeURIComponent(name)}&select=id`, { headers: this.h });
+    const ex = await existing.json();
+    if (ex.length > 0) return true;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/players`, {
+      method: 'POST', headers: this.hw,
+      body: JSON.stringify({ session_id: key, name, done: false, join_question: joinQuestion || 0 })
+    });
+    return r.ok;
+  },
+
+  async updatePlayer(key, name, pct, correct, total, elapsed) {
+    await fetch(`${SUPABASE_URL}/rest/v1/players?session_id=eq.${key}&name=eq.${encodeURIComponent(name)}`, {
+      method: 'PATCH', headers: this.hw,
+      body: JSON.stringify({ pct, correct, total, elapsed, done: true })
+    });
+  },
+
+  async saveAnswer(key, name, questionIdx, status, chosenOption) {
+    await fetch(`${SUPABASE_URL}/rest/v1/answers?session_id=eq.${key}&player_name=eq.${encodeURIComponent(name)}&question_idx=eq.${questionIdx}`, {
+      method: 'DELETE', headers: this.hw
+    });
+    await fetch(`${SUPABASE_URL}/rest/v1/answers`, {
+      method: 'POST', headers: this.hw,
+      body: JSON.stringify({ session_id: key, player_name: name, question_idx: questionIdx, status, chosen_option: chosenOption !== undefined ? chosenOption : -1 })
+    });
+  },
+
+  async getAnswers(key, questionIdx) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/answers?session_id=eq.${key}&question_idx=eq.${questionIdx}&select=*`, { headers: this.h });
+    return await r.json();
+  },
+
+  async getAllAnswers(key) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/answers?session_id=eq.${key}&select=*&order=question_idx.asc`, { headers: this.h });
+    return await r.json();
+  },
+
+  async deleteSession(key) {
+    try {
+      // answers va players cascade o'chishi kerak, aks holda qo'lda o'chiramiz
+      await fetch(`${SUPABASE_URL}/rest/v1/answers?session_id=eq.${key}`, { method: 'DELETE', headers: this.hw });
+      await fetch(`${SUPABASE_URL}/rest/v1/players?session_id=eq.${key}`, { method: 'DELETE', headers: this.hw });
+      await fetch(`${SUPABASE_URL}/rest/v1/sessions?id=eq.${key}`, { method: 'DELETE', headers: this.hw });
+    } catch(e) { console.error('deleteSession error:', e); }
+  }
+};
+
+// ===================== ADMIN =====================
+function adminLogin() {
+  const pass = document.getElementById('admin-pass-input').value;
+  if (pass === ADMIN_PASSWORD) {
+    isAdmin = true;
+    document.getElementById('admin-pass-input').value = '';
+    showScreen('admin-panel');
+  } else {
+    showToast('❌ Parol noto\'g\'ri!');
+  }
+}
+
+async function adminCreateSession() {
+  const key = document.getElementById('session-key-input').value.trim();
+  const group = document.getElementById('admin-group-input').value;
+  const time = parseInt(document.getElementById('admin-time-input').value) || 60;
+  const maxP = parseInt(document.getElementById('admin-maxplayers').value) || 10;
+
+  if (!key) { showToast('Kalit so\'z kiriting!'); return; }
+  if (key.includes(' ')) { showToast('Kalit so\'zda bo\'sh joy bo\'lmasin!'); return; }
+
+  // Eski sessiya bo'lsa o'chirib yangi yaratamiz
+  const existing = await SB.getSession(key);
+  if (existing) {
+    showToast('⏳ Eski sessiya tozalanmoqda...');
+    await SB.deleteSession(key);
+  }
+
+  let selected;
+  if (group === 'random') {
+    let idx = Array.from({length: QUESTIONS.length}, (_, i) => i);
+    selected = shuffle(idx).slice(0, 30);
+  } else {
+    const [from, to] = group.split(',').map(Number);
+    selected = shuffle(Array.from({length: to-from}, (_, i) => from+i));
+  }
+
+  const questions = selected.map(i => {
+    const q = QUESTIONS[i];
+    const optIdx = shuffle([0,1,2,3].slice(0, q.options.length));
+    return { q: q.q, options: optIdx.map(j => q.options[j]), correct: optIdx.indexOf(0) };
+  });
+
+  showToast('⏳ Sessiya yaratilmoqda...', 5000);
+  const ok = await SB.createSession(key, group, time, maxP, questions);
+  if (!ok) { return; } // error toast already shown inside createSession
+
+  sessionKey = key;
+  sessionData = { group, perTime: time, maxPlayers: maxP, questions };
+  currentGroup = group;
+
+  document.getElementById('aw-key').textContent = key;
+  document.getElementById('aw-group').textContent = getGroupLabel(group);
+  document.getElementById('aw-time').textContent = time + 's';
+  document.getElementById('aw-count').textContent = '0';
+  document.getElementById('aw-players').innerHTML = '';
+
+  showScreen('admin-waiting');
+  startAdminPoll();
+}
+
+function startAdminPoll() {
+  // Darhol bir marta yukla
+  (async () => {
+    const players = await SB.getPlayers(sessionKey);
+    document.getElementById('aw-count').textContent = players.length;
+    document.getElementById('aw-players').innerHTML = players.map(p =>
+      `<div class="player-chip"><span class="dot"></span>${p.name}</div>`
+    ).join('');
+  })();
+  pollInterval = setInterval(async () => {
+    try {
+      const players = await SB.getPlayers(sessionKey);
+      document.getElementById('aw-count').textContent = players.length;
+      document.getElementById('aw-players').innerHTML = players.map(p =>
+        `<div class="player-chip"><span class="dot"></span>${p.name}</div>`
+      ).join('');
+    } catch(e) {}
+  }, 1500);
+}
+
+async function adminStartTest() {
+  const btn = document.getElementById('admin-start-btn');
+  btn.textContent = '⏳ Boshlanmoqda...';
+  btn.disabled = true;
+  const ok = await SB.updateSessionStatus(sessionKey, 'countdown');
+  if (!ok) {
+    showToast('❌ Xatolik! Qayta urinib ko\'ring.');
+    btn.textContent = '🚀 Testni boshlash';
+    btn.disabled = false;
+    return;
+  }
+  await SB.updateCurrentQuestion(sessionKey, 0);
+  clearInterval(pollInterval); pollInterval = null;
+  quiz = sessionData.questions;
+  perTime = sessionData.perTime;
+  currentGroup = sessionData.group;
+  startCountdown();
+}
+
+async function adminCancel() {
+  if (sessionKey) {
+    showToast('⏳ Sessiya tozalanmoqda...');
+    await SB.deleteSession(sessionKey);
+    sessionKey = '';
+  }
+  clearInterval(pollInterval); pollInterval = null;
+  showScreen('admin-panel');
+}
+
+// ===================== STUDENT =====================
+function goStudentKey() {
+  const name = document.getElementById('student-name-input').value.trim();
+  if (!name) { showToast('Ismingizni kiriting!'); return; }
+  userName = name;
+  localStorage.setItem('metro_name', name);
+  showScreen('student-key');
+}
+
+async function studentJoin() {
+  const key = document.getElementById('student-key-input').value.trim();
+  if (!key) { showToast('Kalit so\'z kiriting!'); return; }
+  
+  const btn = document.querySelector('#student-key button.btn');
+  if (btn) { btn.textContent = '⏳ Kirilmoqda...'; btn.disabled = true; }
+  
+  const sess = await SB.getSession(key);
+  
+  if (btn) { btn.textContent = 'Kirish →'; btn.disabled = false; }
+  
+  if (!sess) { showToast('❌ Bunday sessiya topilmadi!'); return; }
+  if (sess.status === 'cancelled') { showToast('❌ Sessiya bekor qilingan!'); return; }
+  if (sess.status === 'finished') { showToast('❌ Test tugagan!'); return; }
+
+  sessionKey = key;
+  currentGroup = sess.group_val;
+  quiz = sess.questions;
+  perTime = sess.per_time;
+  sessionData = { group: sess.group_val, perTime: sess.per_time, questions: sess.questions };
+
+  // Test allaqachon boshlangan — joriy savoldan boshla
+  if (sess.status === 'started' || sess.status === 'countdown') {
+    const joinQ = sess.current_question || 0;
+    await SB.addPlayer(key, userName, joinQ);
+    current = joinQ; score = 0; skipped = joinQ; answered = false;
+    quizStartTime = Date.now();
+    showToast('⚡ Test boshlangan! ' + (joinQ + 1) + '-savoldan ulanasiz...');
+    setTimeout(() => {
+      showScreen('quiz-screen');
+      if (liveChipTimer) clearInterval(liveChipTimer);
+      liveChipTimer = setInterval(() => { updateLiveChips(); if (answered) checkAllAnswered(); }, 2000);
+      renderQuestion();
+    }, 1200);
+    return;
+  }
+
+  await SB.addPlayer(key, userName, 0);
+
+  // Kutish ekrani (waiting)
+  document.getElementById('sw-group').textContent = getGroupLabel(sess.group_val);
+  document.getElementById('sw-time').textContent = sess.per_time + 's';
+  document.getElementById('sw-count').textContent = '...';
+  showScreen('student-waiting');
+  startStudentPoll();
+}
+
+function startStudentPoll() {
+  // Darhol bir marta yukla
+  (async () => {
+    try {
+      const players = await SB.getPlayers(sessionKey);
+      document.getElementById('sw-count').textContent = players.length;
+      document.getElementById('sw-players').innerHTML = players.map(p =>
+        `<div class="player-chip ${p.name===userName?'me':''}">
+          ${p.name===userName?'👤 ':''}<span class="dot"></span>${p.name}
+        </div>`
+      ).join('');
+    } catch(e) {}
+  })();
+
+  pollInterval = setInterval(async () => {
+    try {
+      const [sess, players] = await Promise.all([
+        SB.getSession(sessionKey),
+        SB.getPlayers(sessionKey)
+      ]);
+      if (!sess) return;
+      document.getElementById('sw-count').textContent = players.length;
+      document.getElementById('sw-players').innerHTML = players.map(p =>
+        `<div class="player-chip ${p.name===userName?'me':''}">
+          ${p.name===userName?'👤 ':''}<span class="dot"></span>${p.name}
+        </div>`
+      ).join('');
+      if (sess.status === 'countdown') {
+        clearInterval(pollInterval); pollInterval = null;
+        startCountdown();
+        return;
+      }
+      if (sess.status === 'started') {
+        clearInterval(pollInterval); pollInterval = null;
+        const joinQ = sess.current_question || 0;
+        await SB.addPlayer(sessionKey, userName, joinQ);
+        current = joinQ; score = 0; skipped = joinQ; answered = false;
+        quizStartTime = Date.now();
+        showToast('⚡ Test boshlangan! ' + (joinQ + 1) + '-savoldan ulanasiz...');
+        setTimeout(() => {
+          showScreen('quiz-screen');
+          if (liveChipTimer) clearInterval(liveChipTimer);
+          liveChipTimer = setInterval(() => { updateLiveChips(); checkAllAnswered(); }, 2000);
+          renderQuestion();
+        }, 1000);
+        return;
+      }
+      if (sess.status === 'cancelled') {
+        clearInterval(pollInterval); pollInterval = null;
+        showToast('❌ Admin sessiyani bekor qildi');
+        showScreen('role-screen');
+        return;
+      }
+    } catch(e) { console.log('poll error', e); }
+  }, 1500);
+}
+
+// ===================== COUNTDOWN =====================
+function startCountdown() {
+  showScreen('countdown-screen');
+  let n = 3;
+  document.getElementById('countdown-num').textContent = n;
+  const cd = setInterval(() => {
+    n--;
+    if (n <= 0) {
+      clearInterval(cd);
+      startQuizNow();
+    } else {
+      document.getElementById('countdown-num').textContent = n;
+    }
+  }, 1000);
+}
+
+// ===================== QUIZ =====================
+let liveChipTimer = null;
+function startQuizNow() {
+  current = 0; score = 0; skipped = 0; answered = false;
+  quizStartTime = Date.now();
+  showScreen('quiz-screen');
+  if (liveChipTimer) clearInterval(liveChipTimer);
+  liveChipTimer = setInterval(() => {
+    updateLiveChips();
+    checkAllAnswered();
+  }, 1500);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  const total = quiz.length;
+  const q = quiz[current];
+
+  document.getElementById('prog-text').textContent = `${current+1} / ${total}`;
+  document.getElementById('score-live').innerHTML = `✅ ${score} &nbsp; ❌ ${Math.max(0,current-score-skipped)}`;
+  document.getElementById('prog-fill').style.width = `${(current/total)*100}%`;
+  document.getElementById('q-number').textContent = `Savol ${current+1}`;
+  document.getElementById('q-text').textContent = q.q;
+  document.getElementById('next-btn').style.display = 'none'; // Har doim yashirin
+
+  // Options
+  const list = document.getElementById('options-list');
+  list.innerHTML = '';
+  q.options.forEach((opt, i) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.className = 'opt-btn';
+    btn.innerHTML = `<span class="opt-letter">${LETTERS[i]}</span><span>${opt}</span>`;
+    btn.onclick = () => selectOption(i, btn);
+    li.appendChild(btn); list.appendChild(li);
+  });
+
+  // Live chips - har 2 soniyada yangilanadi (liveChipTimer orqali)
+  updateLiveChips();
+
+  // Timer
+  clearInterval(timer);
+  timeLeft = perTime;
+  const badge = document.getElementById('timer-badge');
+  badge.textContent = timeLeft; badge.classList.remove('urgent');
+  timer = setInterval(() => {
+    timeLeft--;
+    badge.textContent = timeLeft;
+    if (timeLeft <= 10) badge.classList.add('urgent');
+    if (timeLeft <= 0) { clearInterval(timer); if (!answered) autoSkip(); }
+  }, 1000);
+}
+
+let liveChipsCache = [];
+async function updateLiveChips() {
+  const answers = await SB.getAnswers(sessionKey, current);
+  const players = await SB.getPlayers(sessionKey);
+  const q = quiz[current];
+  const chips = document.getElementById('live-chips');
+  // Faqat shu savolga ulangan o'quvchilar
+  const activePlayers = players.filter(p => (p.join_question || 0) <= current);
+  chips.innerHTML = activePlayers.map(p => {
+    const ans = answers.find(a => a.player_name === p.name);
+    if (!ans) {
+      return `<div class="live-chip-row pending"><span class="lc-name">⏳ ${p.name}</span></div>`;
+    }
+    let statusCls = '', icon = '⏳', optText = '';
+    if (ans.status === 'correct') { statusCls = 'correct'; icon = '✅'; }
+    else if (ans.status === 'wrong') { statusCls = 'wrong'; icon = '❌'; }
+    else if (ans.status === 'skipped') { statusCls = 'skipped'; icon = '⏱'; }
+    const cho = ans.chosen_option;
+    if (ans.status === 'skipped') {
+      optText = "O'tkazildi";
+    } else if (cho !== undefined && cho !== null && cho >= 0 && q && q.options[cho]) {
+      optText = LETTERS[cho] + '. ' + q.options[cho];
+    }
+    return `<div class="live-chip-row ${statusCls}">
+      <span class="lc-icon">${icon}</span>
+      <span class="lc-name">${p.name}</span>
+      ${optText ? `<span class="lc-opt">${optText}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+let autoAdvanceTimer = null;
+
+async function checkAllAnswered() {
+  if (!answered) return; // Faqat o'zim javob berganmdan keyin tekshir
+  const [answers, players] = await Promise.all([
+    SB.getAnswers(sessionKey, current),
+    SB.getPlayers(sessionKey)
+  ]);
+  const activePlayers = players.filter(p => (p.join_question || 0) <= current);
+  if (activePlayers.length > 0 && answers.length >= activePlayers.length) {
+    if (autoAdvanceTimer) return;
+    autoAdvanceTimer = setTimeout(() => {
+      autoAdvanceTimer = null;
+      nextQuestion();
+    }, 1500); // Hamma javob bergandan 1.5s keyin o'tsin
+  }
+}
+
+async function autoSkip() {
+  answered = true; skipped++;
+  const q = quiz[current];
+  await SB.saveAnswer(sessionKey, userName, current, 'skipped', -1);
+  document.querySelectorAll('.opt-btn').forEach((b, i) => {
+    b.disabled = true;
+    if (i === q.correct) b.classList.add('correct');
+  });
+  updateLiveChips();
+  // Vaqt tugaganda — 3 soniyadan keyin keyingiga o'tsin
+  if (autoAdvanceTimer) clearTimeout(autoAdvanceTimer);
+  autoAdvanceTimer = setTimeout(() => {
+    autoAdvanceTimer = null;
+    nextQuestion();
+  }, 3000);
+}
+
+async function selectOption(idx, btn) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timer);
+  const q = quiz[current];
+  const btns = document.querySelectorAll('.opt-btn');
+  btns.forEach(b => b.disabled = true);
+
+  const isCorrect = idx === q.correct;
+  if (isCorrect) { btn.classList.add('correct'); score++; }
+  else { btn.classList.add('wrong'); btns[q.correct].classList.add('correct'); }
+
+  await SB.saveAnswer(sessionKey, userName, current, isCorrect ? 'correct' : 'wrong', idx);
+  updateLiveChips();
+  document.getElementById('score-live').innerHTML = `✅ ${score} &nbsp; ❌ ${current+1-score}`;
+  // "Keyingi" tugmasi ko'rinmaydi — checkAllAnswered avtomatik o'tkazadi
+}
+
+function nextQuestion() {
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+  current++;
+  if (current >= quiz.length) {
+    showResults();
+  } else {
+    // Sessiyaga joriy savolni saqla (kech qo'shilgan o'quvchilar uchun)
+    SB.updateCurrentQuestion(sessionKey, current);
+    renderQuestion();
+  }
+}
+
+// ===================== RESULTS =====================
+async function showResults() {
+  clearInterval(timer);
+  if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; }
+  if (liveChipTimer) { clearInterval(liveChipTimer); liveChipTimer = null; }
+  errorsLoaded = false;
+  document.getElementById("errors-body").classList.remove("open");
+  document.getElementById("errors-arrow").textContent = "▼";
+  quizElapsed = Math.round((Date.now() - quizStartTime) / 1000);
+  const total = quiz.length;
+  const pct = Math.round((score/total)*100);
+
+  document.getElementById('big-score').textContent = pct + '%';
+  let grade = pct >= 86 ? "🏆 A'lo!" : pct >= 71 ? '👍 Yaxshi' : pct >= 56 ? '📚 Qoniqarli' : '😔 Qoniqarsiz';
+  const timeStr = formatTime(quizElapsed);
+  document.getElementById('score-label').textContent = `${grade} — ${score} ta to'g'ri, ${total} savol • ⏱ ${timeStr}`;
+  document.getElementById('r-correct').textContent = score;
+  document.getElementById('r-wrong').textContent = total - score - skipped;
+  document.getElementById('r-skipped').textContent = skipped;
+  document.getElementById('r-total').textContent = total;
+
+  await SB.updatePlayer(sessionKey, userName, pct, score, total, quizElapsed);
+  saveGlobalResult(currentGroup, pct, score, total, quizElapsed);
+
+  showScreen('result-screen');
+
+  // Dastlab kutish xabari
+  document.getElementById('waiting-lb-msg').style.display = 'block';
+  document.getElementById('final-lb-section').style.display = 'none';
+
+  // Har 3s barcha tugatganmi tekshir
+  if (lbPollInterval) clearInterval(lbPollInterval);
+  lbPollInterval = setInterval(async () => {
+    const players = await SB.getPlayers(sessionKey);
+    const activePlayers = players.filter(p => (p.join_question || 0) <= quiz.length - 1);
+    const donePlayers = activePlayers.filter(p => p.done);
+    document.getElementById('waiting-lb-sub').textContent =
+      donePlayers.length + ' / ' + activePlayers.length + ' kishi yakunladi';
+    if (activePlayers.length > 0 && donePlayers.length >= activePlayers.length) {
+      clearInterval(lbPollInterval); lbPollInterval = null;
+      showFinalLB();
+    }
+  }, 2000);
+}
+
+function showFinalLB() {
+  document.getElementById('waiting-lb-msg').style.display = 'none';
+  document.getElementById('final-lb-section').style.display = 'block';
+  renderSessionLB();
+  renderGlobalLB();
+  // Barcha tugatdi — sessiyani o'chiramiz (kalit so'z yana ishlatilsin)
+  if (sessionKey) {
+    setTimeout(async () => {
+      await SB.deleteSession(sessionKey);
+      sessionKey = '';
+    }, 2000);
+  }
+}
+
+async function renderSessionLB() {
+  const players = await SB.getPlayers(sessionKey);
+  const done = players.filter(p => p.done);
+  const container = document.getElementById('session-lb');
+  if (!done.length) { container.innerHTML = '<div class="lb-empty">Hali hech kim yakunlamagan</div>'; return; }
+  // 1. To'g'ri javob soni (ko'p = yuqori), 2. Vaqt (kam = yuqori)
+  const sorted = [...done].sort((a, b) => {
+    if (b.correct !== a.correct) return b.correct - a.correct;
+    return a.elapsed - b.elapsed;
+  });
+  const medals = ['🥇','🥈','🥉'];
+  container.innerHTML = sorted.map((p, i) => {
+    const isMe = p.name === userName;
+    const medal = medals[i] || (i + 1);
+    return `<div class="lb-item ${isMe ? 'me' : ''}">
+      <div class="lb-rank">${medal}</div>
+      <div style="flex:1">
+        <div class="lb-name">${p.name}${isMe ? ' 👈' : ''}</div>
+        <div class="lb-sub">${p.correct}/${p.total} to'g'ri &nbsp;•&nbsp; ⏱ ${formatTime(p.elapsed)}</div>
+      </div>
+      <div class="lb-score">${p.pct}%</div>
+    </div>`;
+  }).join('');
+}
+
+function renderGlobalLB() {
+  const all = getGlobalResults();
+  const key = getGroupLabel(currentGroup);
+  const results = (all[key] || []).sort((a,b) => b.correct - a.correct || a.elapsed - b.elapsed);
+  const container = document.getElementById('global-lb');
+  const medals = ['🥇','🥈','🥉'];
+  if (!results.length) { container.innerHTML = '<div class="lb-empty">Hali natija yo\'q</div>'; return; }
+  container.innerHTML = results.map((r, i) => `
+    <div class="lb-item ${r.name===userName?'me':''}">
+      <div class="lb-rank">${medals[i]||(i+1)}</div>
+      <div style="flex:1">
+        <div class="lb-name">${r.name}${r.name===userName?' 👈':''}</div>
+        <div class="lb-sub">${r.correct}/${r.total} to'g'ri • ⏱ ${formatTime(r.elapsed)}</div>
+      </div>
+      <div class="lb-score">${r.pct}%</div>
+    </div>
+  `).join('');
+}
+
+// ===================== ERRORS TABLE =====================
+let errorsLoaded = false;
+function toggleErrors() {
+  const body = document.getElementById('errors-body');
+  const arrow = document.getElementById('errors-arrow');
+  body.classList.toggle('open');
+  arrow.textContent = body.classList.contains('open') ? '▲' : '▼';
+  if (body.classList.contains('open') && !errorsLoaded) {
+    errorsLoaded = true;
+    renderErrorsTable();
+  }
+}
+
+async function renderErrorsTable() {
+  const container = document.getElementById('errors-content');
+  try {
+    const [allAnswers, players] = await Promise.all([
+      SB.getAllAnswers(sessionKey),
+      SB.getPlayers(sessionKey)
+    ]);
+
+    let html = '';
+    let anyError = false;
+
+    for (const player of players) {
+      const playerAnswers = allAnswers.filter(a => a.player_name === player.name);
+      const wrongOrSkipped = playerAnswers.filter(a => a.status !== 'correct');
+      if (!wrongOrSkipped.length) continue;
+      anyError = true;
+
+      const wrongCount = playerAnswers.filter(a => a.status === 'wrong').length;
+      const skippedCount = playerAnswers.filter(a => a.status === 'skipped').length;
+      const isMe = player.name === userName;
+      const isAdminUser = isAdmin;
+
+      html += '<div class="err-player-block">';
+      html += '<div class="err-player-name">' +
+        (isMe ? '👈 ' : '') +
+        (player.name) +
+        '<span style="font-weight:400;color:var(--muted);font-size:12px;">' +
+        (wrongCount ? ' ❌ ' + wrongCount + ' xato' : '') +
+        (skippedCount ? ' ⏱ ' + skippedCount + " o'tkazdi" : '') +
+        '</span></div>';
+
+      for (const ans of wrongOrSkipped) {
+        const qIdx = ans.question_idx;
+        const qData = quiz[qIdx] || null;
+        if (!qData) continue;
+        html += '<div class="err-q-item ' + (ans.status === 'wrong' ? 'is-wrong' : 'is-skipped') + '">';
+        html += '<div class="err-q-text"><b>' + (qIdx + 1) + '-savol:</b> ' + qData.q + '</div>';
+        html += '<div class="err-row">';
+        if (ans.status === 'skipped') {
+          html += "<span class='err-badge skipped-ans'>⏱ Vaqt tugadi / o'tkazildi</span>";
+          html += "<span class='err-badge correct-ans'>✅ To'g'ri: " + qData.options[qData.correct] + "</span>";
+        } else {
+          html += "<span class='err-badge correct-ans'>✅ To'g'ri: " + qData.options[qData.correct] + "</span>";
+        }
+        html += '</div></div>';
+      }
+      html += '</div>';
+    }
+
+    if (!anyError) {
+      html = "<div class='no-errors'>🎉 Barcha o'quvchilar barcha savolga to'g'ri javob berishdi!</div>";
+    }
+    container.innerHTML = html;
+  } catch(e) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px;">Xatolarni yuklashda muammo: ' + e.message + '</div>';
+  }
+}
+
+// Restore name on load
+window.onload = function() {
+  const saved = localStorage.getItem('metro_name');
+  if (saved) document.getElementById('student-name-input').value = saved;
+  document.getElementById('student-name-input').addEventListener('keydown', e => { if(e.key==='Enter') goStudentKey(); });
+  document.getElementById('student-key-input').addEventListener('keydown', e => { if(e.key==='Enter') studentJoin(); });
+  document.getElementById('admin-pass-input').addEventListener('keydown', e => { if(e.key==='Enter') adminLogin(); });
+};
+
+// ===================== QUESTIONS =====================
+const QUESTIONS = [
+  {"q":"Metrologiya nima ?","options":["Talab etilgan aniqlikga erishish haqidagi fan.","Standartlashtirish soxasidagi munosabatlarni tartibga solish;","Metrologiya soxasidagi munosabatlarni tartibga solish;","Umumiy va ko'p marta foydalanish uchun qoidalarni belgilaydigan faoliyat."]},
+  {"q":"O'lchov vositalari o'lchash jarayonidagi bajarayotgan funksiyasiga qarab qanday o'lchov asboblariga bo'linadi?","options":["Ishchi, namunaviy, etalon.","ampermetr, voltmetr, ommetr.","o'lchov, standart, namuna.","absolyut, nisbiy, keltirilgan"]},
+  {"q":"Xalq ho'jaligining barcha tarmoqlarida amaliy o'lchashlar uchun mo'ljallangan o'lchov asboblari .........","options":["Ishchi o'lchov asboblari deb ataladi.","-namunaviy o'lchov asboblari deb ataladi.","etalon o'lchov asboblari deb ataladi.","texnik o'lchov asboblari deb ataladi."]},
+  {"q":"O'lchov asboblarining aniqlik klassi nechta qismga bo'linadi?","options":["8 ta q'ismdan iborat","2 ta qismdan iborat","4 ta q'ismdan iborat","6 ta q'ismdan iborat"]},
+  {"q":"Metrologiya asoslari moduli nechta bo'limga ajratiladi?","options":["3 ta bo'limdan iborat","2 ta bo'limdan iborat","5 ta bo'limdan iborat","4 ta bo'limdan iborat"]},
+  {"q":"Moddalar xajmi o'zgarmas bo'lganda temperatura o'zgarishi bilan bosimning o'zgarishiga asoslangan termometrlar ........","options":["Manometrik termometrlar","kengayish termometrlari","q'arshilik termometrlari","termoelektr termometrlari"]},
+  {"q":"Amaliy metrologiya nima bilan shug'ullanadi?","options":["Amaliy metrologiya nazariy tadqiqotlar natijalari va Qonunchilik metrologiyasi qoidalarini amaliyotga tatbiq yetish bilan shug'ullanadi.","Qonunchilik metrologiyasi qoidalarini amaliyotga tatbiq yetish bilan shug'ullanadi.","Amaliy metrologiya nazariy tadqiqotlari natijalarini amaliёtga tatbiq etish bilan shug'ullanadi.","Metrologiyasi qoidalarini amaliёtga tatbiq etish bilan shug'ullanadi."]},
+  {"q":"Nurlanish termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["- 50°C dan  6000°C gacha","-200°C dan 600°C gacha","-0°C dan  500°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Qanday xatolik metrologik tavsifda meyorlangan bo'ladi?","options":["Keltirilgan xatolik","nisbiy xatolik","instrumental xatolik","muntazam xatolik"]},
+  {"q":"O'lchov asbobining qanday xatoligi o'lchash chegarasiga bog'liq ravishda o'sadi?","options":["Absolyut xatolik","additiv xatolik","multiplikativ xatolik","instrumental xatolik"]},
+  {"q":"Suyuqlikning ma'lum bir doimiy xajmining vaznini uzluksiz tortib turishga asoslangan zichlik o'lchagich nomini aniqlang?","options":["Vaznli zichlik o'lchagich","Kalkovichli zichlik o'lchagich","Gidrositatik zichliq' o'lchagich","Radioizotopik zichlik o'lchagich"]},
+  {"q":"Kengayish termometrlarining suyuqligi sifatida qanday ximiyaviy moddalar ishlatiladi?","options":["Kerosin, toluol, etanol","Suv, yog', azot","Kislorod, ftor, xlor","Geliy, neon, argon"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning elektr o'tkazuvchanligiga ko'ra o'lchash .........","options":["Konduktometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Optik usul deb ataladi","Avtomatik usul deb ataladi,"]},
+  {"q":"Qayta ko'rib chiqilgan Halqaro birliklar (HB) sistemasi qachondan kuchga kirgan.","options":["2019 yil 20 maydan kuchga kirgan","2020 yil 20 maydan kuchga kirgan","2018 yil 20 maydan kuchga kirgan","2019 yil 20 martdan kuchga kirgan"]},
+  {"q":"O'zgarmas tok zanjirida qarshilikning qiymati 10 om,  tok kuchining qiymati 5A  bo'lganda kuchlanishning qiymatini aniqlang?","options":["50 V","5 V","15 V","2 V"]},
+  {"q":"Qarshiligi o'zgarmas bo'lgan zanjir uchlaridagi kuchlanish ikki marta oshganda ajralib chiqqan quvvat qanday o'zgaradi?","options":["4 marta oshadi","2 marta oshadi","2 marta kamayadi","4 marta kamayadi"]},
+  {"q":"Kappilyar viskozimetri bo'yicha aniqlanishi mumkin bo'lgan qovushqoqlikning chegarasini aniqlab bering?","options":["0,001 dan 10 Pa*s gacha","0,01 dan 100 Pa *s gacha","0,01 dan 1000 Pa*s gacha","0,001 dan 0,1 Pa*s gacha"]},
+  {"q":"Galvanometrning aniqlik klassi 0,05 ga teng. Galvanometrning to'g'ri ishlash chegarasidagi maksimal keltirilgan xatolik qiymatini aniqlang.","options":["0,05 %","1,5 %","1,0 %","2,5 %"]},
+  {"q":"Halqaro birliklar sistemasi bo'yicha metr o'lchov birligi qaysi asosda qabul qilingan?","options":["Yer meridianining qirq milliondan  bir ulushi bo'yicha  qabul qilingan.","Yorug'lik tezkigi asosida qabul qilingan.","Ekvatorning uzunligi bo'yicha  qabul qilingan.","Yer diametrining uzunligi asosida qabul qilingan."]},
+  {"q":"Yurak biopotensialini o'lchash uchun mo'ljallangan o'lchash asboblari .......","options":["Elektrokardiograflar deb ataladi.","elektroensefalograflar deb ataladi.","elektropotensiallar deb ataladi.","magnitoensefalograflar deb ataladi."]},
+  {"q":"Modda miqdorini o'lchaydigan asboblar ...:","options":["Sarf o'lchagichlar deb ataladi","Hisoblagichlar deb ataladi","Vazn o'lchagichlar deb ataladi","Bosim o'lchagichlar deb ataladi"]},
+  {"q":"Galvonometrning ko'rsatishi 100 mA va o'lchanayotgan tok kuchining haqiqiy qiymati 98 mA bo'lganda, galvanometrning nisbiy xatoligini aniq'lang?","options":["2,04%","1,5%","2,0%","2,1%"]},
+  {"q":"Absolyut xatolikni o'lchov asbobining chegaraviy qiymatyga nisbati bilan aniqlanadigan xatolik ...:","options":["Keltirilgan xatolik deb ataladi","absolyut xatolik deb ataladi.","nisbiy xatolik deb ataladi.","Instrumental xatolik deb ataladi"]},
+  {"q":"O'rta Osiyoda 'O'lchovlar va tarozilar to'g'risida Nizom' Turkiston Respublikasi SNK tomonidan nechanchi yilda tasdiqlangan","options":["1923 yil 18 aprelda tasdiqlangan","1921 yil 18 martda tasdiqlangan","1925 yil 18 aprelda tasdiqlangan","1924 yil 18 martda tasdiqlangan"]},
+  {"q":"O'lchash chegarasi 25 A ga teng bo'lgan ampermetrning ko'rsatishi 20 A va o'lchanayotgan tok kuchining xaqiqiy qiymati 19 A ga teng. Ampermetrning keltirilgan xatoligini aniqlang?","options":["4,0%","2,0%","3,0%","6,0%"]},
+  {"q":"Metr o'lchov birligining zamonaviy aniqlash usuli ……….. .","options":["1/299 792 458 soniyaning bir qismida vakuumda yorug'lik nurlari o'tadigan yo'l uzunligi hisoblanadi.","1/60 soniyaning bir qismida vakuumda yorug'lik nurlari o'tadigan yo'l uzunligi bo'yicha  qabul qilingan.","1/60 soniyaning bir qismida vakuumda ёrug'lik nurlari o'tadigan yo'l uzunligi bo'yicha  qabul qilingan.","1/60 soatning bir qismida vakuumda ёrug'lik nurlari o'tadigan yo'l uzunligi bo'yicha  qabul qilingan."]},
+  {"q":"Bosim o'lchash asboblarini ko'rsatib bering?","options":["Manometr, barometr, vakuummetr","Ampermetr, voltmetr, ommetr","Termometr, logometr","potentsiometr, konduktometr"]},
+  {"q":"Halqaro birliklar sistemasi bo'yicha kilogramm o'lchov birligi qaysi asosda qabul qilingan?","options":["Bir kub desimetr suvning temperaturasi 4oC bo'lgandagi massasi - bo'yicha  qabul qilingan.","Bir kub metr suvning temperaturasi 4oC bo'lgandagi massasi - bo'yicha  qabul qilingan.","Normal atmosfera bosimidagi 1 litr suvning massasi - bo'yicha  qabul qilingan.","Bir kub desimetr suvning temperaturasi 14oC bo'lgandagi massasi - bo'yicha  qabul qilingan."]},
+  {"q":"Vattmetrning ko'rsatishi Wn= 50 vt va o'lchanayotgan quvvatning haqiqiy qiymati Wnx = 49 vt bo'lganda vattmetrning nisbiy xatoligini aniklang?","options":["2,04  %","1,5  %","2,1  %","2,5  %"]},
+  {"q":"O'zbekiston Texnik jihatdan tartibga solish agentligi Hay'ati tarkibi O'zbekiston Respublikasi Vazirlar Mahkamasi tomonidan qachon tasdiqlangan:","options":["2025-yil 11-yanvardagi 11-son qarori bilan tasdiqlangan.","2023-yil 22-yanvardagi 11-son qarori bilan tasdiqlangan.","2026-yil 10-yanvardagi 11-son qarori bilan tasdiqlangan.","2026-yil 15-yanvardagi 10-son qarori bilan tasdiqlangan."]},
+  {"q":"O'zbekiston Texnik jihatdan tartibga solish agentligining Apellyatsiya kengashi tarkibi tomonidan qachon tasdiqlangan?","options":["2022-yil 2-noyabrdagi 59-son buyrug'i bilan tasdiqlangan.","2021-yil 2-noyabrdagi 59-son buyrug'i bilan tasdiqlangan.","2023-yil 2-noyabrdagi 59-son buyrug'i bilan tasdiqlangan.","2025-yil 2-noyabrdagi 59-son buyrug'i bilan tasdiqlangan."]},
+  {"q":"Apellyatsiya kengashi tarkibi kim tomonidan tasdiqlangan?","options":["O'zbekiston Texnik jihatdan tartibga solish agentligi Bosh direktori tomonidan  tasdiqlangan.","O'zbekiston Respublikasi Vazirlar Mahkamasi tomonidan  tasdiqlangan.","O'zbekiston Milliy Metrologiya instituti tomonidan  tasdiqlangan.","O'zbekiston Respublikasi standartlashtirish instituti tomonidan  tasdiqlangan."]},
+  {"q":"O'lchash chegarasi 50 V ga teng bo'lgan voltmetrning ko'rsatishi 40 V  va o'lchanayotgan kuchlanishning  haqiqiy qiymati 38 V ga teng. Voltmetrning  keltirilgan  xatoligyni aniklang:","options":["4,0%","2,0%","6,0%","8,0%"]},
+  {"q":"Bosh miyadagi elektrik potensiallarni o'lchashga asoslangan usul .......","options":["elektroensefalografiya usuli deb ataladi.","elektrokardiografiya usuli deb ataladi.","elektrobiopotensialografiya usuli deb ataladi.","magnitoensefalografiya usuli deb ataladi."]},
+  {"q":"Fizik kattalik birliklarini qayta tiklash va ularni saqlash uchun xizmat qiladigan o'lchov asboblari...:","options":["Etalon o'lchov asboblari deb ataladi.","ishchi o'lchov asboblari deb ataladi.","namunaviy o'lchov asboblari deb ataladi.","texnik o'lchov asboblari deb ataladi."]},
+  {"q":"Qaysi termometrlar monometrik termometrlar guruhiga kiradi:","options":["Gazli, suyuqlikli, bug'-suyuqlikli termometrlar.","Shisha termometrlar, dilatometrik va bimetallik termometrlar.","Metall o'tkazgichli termometrlar, yarim o'tkazgichli termometrlar.","Kvazimonoxromatik termometrlar, spektral nisbatli pirometrlar, to'liq' nurlanish pirometrlar."]},
+  {"q":"Suyuq'likli termometrlar qaysi diapazondagi haroratni o'lchash uchun mo'ljallangan?","options":["- 2000C dan  6000C gacha","00C dan   5000C gacha","00C dan  10000C gacha","100C dan  3000C gacha."]},
+  {"q":"Suyuqlik yoki qattiq jismlar hajmi yoki chiziqli o'lchamlarning o'zgarishiga asoslangan termometrlar:","options":["Kengayish termometrlari","Monometrik termometrlari","Termoelektr termometrlari","Qarshilik termometrlari"]},
+  {"q":"Elektr qarshilikning o'zgarishiga asoslangan termometlar:","options":["Qarshilik termometlari","Nurlanish termometlari","Termoelektr termometlari","Kengayish termometrlari"]},
+  {"q":"Monometrik termometrlar qaysi diapozondagi temperaturani o'lchash uchun mo'ljallangan:","options":["- 50 C dan   1000 C gacha","- 200 C dan  600 C gacha","- 0 C dan  500 C gacha","- 260 C dan   1100 C gacha"]},
+  {"q":"O'lchov vositalari asosan  qanday o'lchov asboblariga bo'linadi:","options":["Ishchi, namunaviy, etalon.","ampermetr, voltmetr, ommetr.","o'lchov, standart, namuna.","absolyut, nisbiy, keltirilgan"]},
+  {"q":"Xalq' xo'jaligining barcha tarmoqlarida amaliy o'lchashlar uchun mo'ljallangan o'lchov asboblari..........","options":["Ishchi o'lchov asboblari deb ataladi.","namunaviy o'lchov asboblari deb ataladi.","etalon o'lchov asboblari deb ataladi.","texnik o'lchov asboblari deb ataladi"]},
+  {"q":"Yurak biopotensialini o'lchashga asoslangan usul .......","options":["elektrokardiografiya usuli deb ataladi.","elektroensefalografiya usuli deb ataladi.","elektrobiopotensialografiya usuli deb ataladi.","magnitoensefalografiya usuli deb ataladi."]},
+  {"q":"O'lchov asboblarining aniq'lik klassi nechta qismga bo'linadi:","options":["8 ta qismdan iborat","2 ta qismdan iborat","4 ta qismdan iborat","6 ta qismdan iborat"]},
+  {"q":"O'zbekiston Respublikasida standartlarning qanday toifalari amal qiladi.","options":["миллий стандартлар; халқаро (минтақавий) стандартлар; хорижий мамлакатларнинг стандартлари.","миллий стандартлар; халқаро (минтақавий) стандартлар; хuquqiy стандартлар.","Texnik стандартлар; халқаро (минтақавий) стандартлар; хорижий мамлакатларнинг стандартлари.","миллий стандартлар; umumiy стандартлар; Texnik стандартлар."]},
+  {"q":"O'zbekiston Respublikasida o'lchashlarning yagona birlikda bo'lishini ta'minlashga doir qanday normativ hujjatlar qo'llaniladi?","options":["o'lchash vositalarini qiyoslash uslubiyoti; o'lchash vositalarini kalibrlash uslubiyoti; o'lchashlarni bajarish uslubiyoti; sinov vositalarini attestatsiyadan o'tkazish uslubiyoti.","o'lchashlarni bajarish uslubiyoti; sinov vositalarini attestatsiyadan o'tkazish uslubiyoti.","o'lchash vositalarini qiyoslash uslubiyoti; o'lchash vositalarini kalibrlash uslubiyoti;","o'lchash vositalarini qiyoslash uslubiyoti; sinov vositalarini attestatsiyadan o'tkazish uslubiyoti."]},
+  {"q":"Moddalar hajmi o'zgarmas bo'lganda temperatura o'zgarishi bilan bosimning o'zgarishiga asoslangan termometrlar:","options":["manometrik termometrlar","kengayish termometrlari","qarshilik termometrlari","termoelektr termometrlari"]},
+  {"q":"Nurlanish termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (2):","options":["-50°C dan    6000°C gacha","-200°C dan     600°C gacha","-0°C dan    500°C gacha","10°C dan   300°C gacha"]},
+  {"q":"Kengayish termometrlarining suyuqligi sifatida qanday ximiyaviy moddalar   ishlatiladi:","options":["Kerosin, toluol, etanol","Suv, yog, azot","Kislorod, ftor, xlor","Geliy, neon, argon"]},
+  {"q":"Elektrolit eritmalarining konsentratsiyasini ularning elektr o'tkazuvchanligiga ko'ra o'lchash","options":["Konduktometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Optik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  pH  ko'rsatkichiga  ko'ra o'lchash ...:","options":["Potentsiometrik usul deb ataladi,","Optik usul deb ataladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  nur o'tkazish koeffitsientiga   ko'ra o'lchash ...:","options":["Spektrofotometrik usul deb ataladi,","Potentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Bosh miyadagi magnit maydoni ta'siridagi o'zgarishlarni o'lchashga asoslangan usul .......","options":["magnitoensefalografiya usuli deb ataladi.","elektroensefalografiya usuli deb ataladi.","elektrokardiografiya usuli deb ataladi.","elektrobiopotensialografiya usuli deb ataladi."]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  qutblanish tekisligini burilish burchagini o'lchashga asoslangan usul ...:","options":["polyarimetrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  nurning sochilishiga    ko'ra o'lchash ..","options":["Nefelometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektr o'lchash  asboblari o'zining tuzilishi va ishlash prinsipi jihatidan qanday o'lchash asboblariga bo'linadi:","options":["Magnitoelektrik o'lchash  asboblari; Elektromagnitik o'lchash  asboblari; Elektrodinamik o'lchash  asboblari.","Elektromagnitik o'lchash  asboblari; Elektrodinamik o'lchash  asboblari.","Magnitoelektrik o'lchash  asboblari; Elektrodinamik o'lchash  asboblari.","Magnitoelektrik o'lchash  asboblari; Elektromagnitik o'lchash  asboblari;"]},
+  {"q":"O'zgarmas tok zanjirida kuchlanish qiymati 10 V tok kuchining qiymati 5 A, qarshilikning qiymatini aniqlang:","options":["2  Om","5 Om","10 Om","15om"]},
+  {"q":"Nurlanish termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (3):","options":["- 50°S dan +6000°S gacha","-200°S dan +600°S gacha","0°S dan +500°S gacha","0°S dan +1100°S gacha"]},
+  {"q":"Qarshiligi o'zgarmas bo'lgan zanjir uchlaridagi kuchlanish ikki marta oshganda ajralib chiqqan quvvat qanday o'zgaradi (2):","options":["4 marta oshadi","2 marta oshadi","2 marta kamayadi","4 marta kamayadi"]},
+  {"q":"Kappilyar viskozimetri bo'yicha aniqlanishi mumkin bo'lgan qovushqoqlikning chegarasini aniqlab bering (2):","options":["0,001 dan 10 Pa s gacha","0,01 dan 100 Pa s gacha","0,01 dan 1000 Pas gacha","0,001 dan 0,1 Pas gacha"]},
+  {"q":"Ishlab turgan bosh miyani virtual rasmlari yordamida uning aktivligini qayd qilishga asoslangan usul ......... .","options":["tomografik usul deb ataladi.","poligrafik usul deb ataladi.","pozitron-emission tamografik usul deb ataladi.","magnit-rezonans tamografik usul deb ataladi."]},
+  {"q":"Galvanometrning aniqlik klassi 0,01 ga teng. Galvanometrning to'g'ri ishlash chegarasidagi maksimal keltirilgan xatolik qiymatini aniqlang (2):","options":["0,01 %","0,02 %","0,05 %","0,1 %"]},
+  {"q":"Atmosfera bosimini o'lchaydigan o'lchov asbobi .... :","options":["Barometr deb ataladi","Manometr deb ataladi","Vakuummetr deb ataladi","Monovakuummetr deb ataladi"]},
+  {"q":"Modda miqdorini o'lchaydigan asboblar ....:","options":["Hisoblagichlar deb ataladi","Sarf o'lchagichlar deb ataladi","Vazn o'lchagichlar deb ataladi","Bosim o'lchagichlar deb ataladi"]},
+  {"q":"O'lchash chegarasi 25A ga teng bo'lgan ampermetrning ko'rsatishi 20 A va o'lchanayotgan tok kuchining xaqiqiy qiymati 19 A ga teng. Ampermetrning keltirilgan xatoligini aniqlang (2):","options":["4,0%","1,0%","2,0%","3,0%"]},
+  {"q":"Bosim o'lchash asboblarini ko'rsatib bering (2):","options":["Manometr, barometr, vakuummetr","Ampermetr, voltmetr, ommetr","Termometr, logometr","potensiometr, konduktometr"]},
+  {"q":"Absolyut xatolikni kattalikning o'lchangan qiymatiga nisbati bilan aniqlanadigan xatolik…:","options":["Nisbiy xatolik deb ataladi","Absolyut xatolik deb ataladi","Keltirilgan xatolik deb ataladi","Instrumental xatolik deb ataladi"]},
+  {"q":"Vattmetrning ko'rsatishi Wn = 200 vt va o'lchanayotgan quvvatning xaqiqiy qiymati Wnx = 196 vt bo'lganda vattmetrning nisbiy xatoligini aniqlang:","options":["2,04%","2,1%","2,5%","1,0"]},
+  {"q":"O'lchash chegarasi 50 V ga teng bo'lgan voltmetrning ko'rsatishi 40 V  va o'lchanayotgan kuchlanishning xaqiqiy 38 V ga teng voltmetrning keltirilgan xatoligyni aniqlang.","options":["4,0%","2,0%","1,0%","3,0%"]},
+  {"q":"Odam organizmidagi hosil bo'ladigan har xil fizoilogik jarayonlarni magnit maydoni ta'siridagi o'zgarishlarni o'lchashga asoslangan usul .......  .","options":["magnit-rezonans tamografik usul deb ataladi.","poligrafik usul deb ataladi.","tomografik usul deb ataladi.","pozitron-emission tamografik usul deb ataladi."]},
+  {"q":"Fizik kattalik birliklarini qayta tiklash va ularni saqlash uchun xizmat qiladigan o'lchov asboblari (2)...","options":["Etalon o'lchash asboblari deb ataladi.","ishchi o'lchash asboblari deb ataladi.","namunaviy o'lchash asboblari deb ataladi.","texnik o'lchash asboblari deb ataladi."]},
+  {"q":"Qaysi termometrlar qarshilik termometrlari guruhiga kiradi:","options":["Metall o'tkazgichli termometrlar, yarim o'tkazgichli termometrlar","SHisha termometrlar, dilatometrik va bimetalik termometrlar.","Termoelektrik termometrlar.","Gazli, suyuqlikyi, bug'-suyuqlikli termometrlar."]},
+  {"q":"Suyuqlikli termometrlar qaysi diapazondagi haroratni o'lchash uchun mo'ljallangan (2):","options":["– 2000C dan + 6000C gacha","0C dan + 5000C gacha","+500C dan + 10000C gacha","00C dan + 10000C gacha"]},
+  {"q":"Suyuqlik yoki qattiq  jismlar hajmi yoki chiziqli o'lchamlarning o'zgarishiga asoslangan termometrlar (2):","options":["Kengayish termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Karshilik termometrlar"]},
+  {"q":"Elektr qarshilikning o'zgarishiga asoslangan termometlar (2):","options":["Qarshilik termometlari","Nurlanish termometlari","Termoelektr termometlari","Kengayish termometrlari"]},
+  {"q":"Monometrik termometrlar qaysi diapozondagi temperaturani o'lchash uchun mo'ljallangan (2):","options":["- 500C dan + 10000C  gacha","- 200 C dan + 600 C gacha","0 C dan + 500 C gacha","260 C dan + 1100 C gacha"]},
+  {"q":"Qattiq  jismlarni hajmi yoki chiziqli o'lchamlarining o'zgarishiga asoslangan termometrlar","options":["Dilatometrik termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Karshilik termometrlar"]},
+  {"q":"Elektroensefalografiya usuli yordamida bosh miya neyronlarining aktivligini ko'rsatib beradigan natija qanday nomlanadi.","options":["elektroensefalogramma deb ataladi.","elektrokardiogramma deb ataladi.","elektrobiopotensialogramma deb ataladi.","magnitoensefalogramma deb ataladi."]},
+  {"q":"Qattiq  jismlarni hajmi yoki chiziqli o'lchamlarining o'zgarishiga asoslangan termometrlar (2):","options":["Bimetalli termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Karshilik termometrlar"]},
+  {"q":"Moddalar xajmi o'zgarmas bo'lganda temperatura o'zgarishi bilan bosimning o'zgarishiga asoslangan termometrlar (3):","options":["Manometrik termometrlar","kengayish termometrlari","qarshilik termometrlari","termoelektr termometrlari"]},
+  {"q":"Nurlanish termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (4):","options":["-2000C dan +6000C gacha","-00C dan +5000C gacha","-500C dan +60000C gacha","100C dan +3000C gacha"]},
+  {"q":"Yurak biopotensialini o'lchashdagi  natija qanday nomlanadi.","options":["elektrokardiogramma deb ataladi.","elektroensefalogramma deb ataladi.","elektrobiopotensialogramma deb ataladi.","magnitoensefalogramma deb ataladi."]},
+  {"q":"Elektrolit eritmalarining konsentratsiyasini ularning elektr utkazuvchanligiga ko'ra ulchash .","options":["Konduktometrik usul deb ataladi,","Optik usul deb ataladi,","Patensiometrik usul deb aytiladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Qattiq jismlar hajmi yoki chiziqli o'lchamlarning o'zgarishiga asoslangan termometrlar (2):","options":["dilatometrik termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Karshilik termometrlar"]},
+  {"q":"Qattiq  jismlar hajmi yoki chiziqli o'lchamlarning o'zgarishiga asoslangan termometrlar (3):","options":["Bimetalli termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Qarshilik termometrlar"]},
+  {"q":"Kvazimonoxromatik termometrlar  qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["700°C dan  6000°C gacha","-200°C dan 600°C gacha","-0°C dan  500°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Qanday xatolik metrologik tavsifda meyorlangan bo'ladi (2):","options":["Keltirilgan xatolik","absolyut xatolik","instrumental xatolik","muntazam xatolik"]},
+  {"q":"O'lchov asbobining qanday xatoligi o'lchash chegarasiga bog'lik ravishda o'sadi:","options":["absolyut xatolik","additiv xatolik","multiplikativ xatolik","instrumental xatolik"]},
+  {"q":"Kengayish termometrlarining suyuqligi sifatida qanday ximiyaviy moddalar ishlatiladi (2):","options":["Simob, toluol, etanol","Suv, yog', azot","Kislorod, ftor, xlor","Geliy, neon, argon"]},
+  {"q":"Spektral nisbatli pirometrlat (termometrlar)   qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["300°C dan  2800°C gacha","-200°C dan 600°C gacha","-0°C dan  500°C gacha","10°C dan 300°C gacha"]},
+  {"q":"To'liq nurlanish pirometrlat (termometrlar) qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-50°C dan  3500°C gacha","-200°C dan 600°C gacha","-0°C dan  500°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Qarshilik termometrlarida gisterezis xolati nima?","options":["Temperatura oshib borishi va kamayib borishida xar xil qiymatlarni ko'rsatishi.","Temperatura oshib borishida va kamayib borishida bir xil qiymatlarni ko'rsatishi.","Temperatura oshib borishida bir xil qiymatlarni ko'rsatishi.","Temperatura kamaqib borishida bir xil qiymatlarni ko'rsatishi."]},
+  {"q":"O'zgarmas tok zanjirida kuchlanish qiymati 16 V tok kuchining qiymati 4 A, qarshilikning qiymatini aniqlang:","options":["4 om","5om","10 om","16 om"]},
+  {"q":"Qanday qiyoslash birlamchi qiyoslash deb ataladi.","options":["Ishlab chiqarishdan so'ng o'tkaziladigan yoki ta'mirlashdan keyin o'tkaziladigan qiyoslash birlamchi qiyoslash deb ataladi.","Qiyoslashlararo intervalining muddati tugagandan so'ng o'tkaziladigan  qiyoslash birlamchi qiyoslash deb ataladi.","Xar oyda o'tkaziladigan  qiyoslash birlamchi qiyoslash deb ataladi.","Ma'lum bir muddatda o'tkaziladigan  qiyoslash birlamchi qiyoslash deb ataladi."]},
+  {"q":"Qarshiligi o'zgarmas bo'lgan zanjir uchlaridagi kuchlanish 0,5 marta oshganda ajralib chiqqan quvvat qanday o'zgaradi:","options":["2 marta kamayadi","2 marta oshadi","0,25 marta oshadi","0,25 marta kamayadi"]},
+  {"q":"Qanday qiyoslash davriy qiyoslash deb ataladi.","options":["Qiyoslashlararo intervalining muddati tugagandan so'ng o'tkaziladigan  qiyoslash davriy qiyoslash deb ataladi.","Ishlab chiqarishdan so'ng o'tkaziladigan yoki ta'mirlashdan keyin o'tkaziladigan qiyoslash birlamchi qiyoslash deb ataladi.","Xar oyda o'tkaziladigan  qiyoslash birlamchi qiyoslash deb ataladi.","Ma'lum bir muddatda o'tkaziladigan  qiyoslash birlamchi qiyoslash deb ataladi."]},
+  {"q":"Dilatometrik va bimetalli termometrlar   qanday diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["- 150°C dan  700°C gacha","-200°C dan 600°C gacha","-0°C dan  500°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Galvonometrning ko'rsatishi 400 mA va o'lchanayotgan tok kuchining haqiqiy qiymati 392 mA bo'lganda, galvanometrning nisbiy xatoligini aniq'lang:","options":["2,04%","1,5%","2,0%","2,1%"]},
+  {"q":"O'lchash chegarasi 50 A ga teng bo'lgan ampermetrning ko'rsatishi 20 A va o'lchanayotgan tok kuchining xaqiqiy qiymati 19 A ga teng. Ampermetrning keltirilgan xatoligini aniqlang (2):","options":["2,0%","3,0%","4,0%","1,0%"]},
+  {"q":"Absolyut xatolik nima?","options":["Kattalikning xaqiqiy qiymati bilan o'lchangan qiymati o'rtasidaga farqni ko'rsatib beradigan xatolik...","kattalikning xaqiqiy qiymatini o'lchangan qiymatiga nisbati orqali aniqlanadigan xatolik...","kattalikning o'lchangan qiymatini xaqiqiy qiymatiga  nisbati orqali aniqlanadigan xatolik.","Absolyut xatolikni o'lchangan qiymatga  nisbati orqali aniqlanadigan xatolik."]},
+  {"q":"Vattmetrning ko'rsatishi Wn= 100 Vt va o'lchanayotgan quvvatning haqiqiy qiymati Wnx = 99 Vt bo'lganda vattmetrning nisbiy xatoligini aniqlang:","options":["1,01 %","1,05 %","2,01 %","2,05 %"]},
+  {"q":"Ulchash chegarasi 50 V ga teng bo'lgan voltmetrning ko'rsatishi 40 B  va ulchanayotgan kuchlanishning  haqiqiy qiymati 39 V ga teng. Voltmetrning  keltirilgan  xatoligyni aniqlang:","options":["2,0 %","4,0 %","1,0 %","3,0 %"]},
+  {"q":"O'lchash asbobining o'lchash qiymati 60 Om, o'lchanayotgan qarshilikning qiymati 59 Om ga teng. Ommetrning nisbiy xatoligini aniqlang.","options":["1,69 %","2,69  %","3,69  %","0,69  %"]},
+  {"q":"O'lchash asbobining maksimal o'lchash chegarasi 100 Omga teng. Ommetrning keltirilgan xatoligini aniqlang (o'lchash 60 Om, haqiqiy 59 Om).","options":["1,0 %","2,0  %","3,0 %","0,5  %"]},
+  {"q":"Termoelektrik termometrlar qanday diapazondagi haroratni o'lchash uchun mo'ljallangan:","options":["- 2000C dan  25000C gacha","00C dan   5000C gacha","00C dan  10000C gacha","-   100C dan  3000C gacha."]},
+  {"q":"Suyuqlik yoki gazlarni bosimini o'zgarishi asosida temperatura o'lchash asboblarining nomini aniqlab bering:","options":["Monometrik termometrlar","Kengayish termometrlar","Termoelektr termometrlar","Qarshilik termometrlar"]},
+  {"q":"Elektr qarshilikning o'zgarishiga asoslangan termometlar (3):","options":["Qarshilik termometlari","Nurlanish termometlari","Termoelektr termometlari","Kengayish termometrlari"]},
+  {"q":"Qanday aniqlik klassiga teng bo'lgan Dilatometrik termometrlar ishlab chiqariladi?","options":["1,5 – 2,5  aniqlik klassiga teng bo'lgan termometrlar","1,0 – 4,0  aniqlik klassiga teng bo'lgan termometrlar","2,0 – 2,5  aniqlik klassiga teng bo'lgan termometrlar","0,5 – 4,0  aniqlik klassiga teng bo'lgan termometrlar"]},
+  {"q":"Qanday aniqlik klassiga teng bo'lgan Bimetalli termometrlar ishlab chiqariladi?","options":["1,0 – 1,5  aniqlik klassiga teng bo'lgan termometrlar","1,0 – 4,0  aniqlik klassiga teng bo'lgan termometrlar","2,0 – 2,5  aniqlik klassiga teng bo'lgan termometrlar","0,5 – 4,0  aniqlik klassiga teng bo'lgan termometrlar"]},
+  {"q":"Kengayish termometrlarining suyukligi sifatida qanday ximiyaviy moddalar   ishlatiladi (Galliy):","options":["Галлий-индий-Қалай","Suv, yog, azot","Kislorod, ftor, xlor","Geliy, neon, argon"]},
+  {"q":"Elektrokardiograflar o'zining tuzilishi va ishlash printsipi bo'yicha qanday guruhlarga ajratiladi:","options":["1 kanalli, 3 kanalli, 6 kanalli, 12 kanalli, 15 kanallilarga bo'linadi.","4 kanalli, 8 kanalli, 16 kanalli, 32 kanallilarga bo'linadi.","2 kanalli, 4 kanalli, 6 kanalli, 8 kanallilarga bo'linadi.","3 kanalli, 6 kanalli, 9 kanalli, 12 kanallilarga bo'linadi."]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  nur sindirish ko'rsatkichini o'lchashga asoslangan usul  ...:","options":["Refraktometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"O'zgarmas tok zanjirida kuchlanish qiymati 30 V tok kuchining qiymati 15 A, qarshilikning qiymatini aniqlang:","options":["2 Om","5 Om","10 Om","15 om"]},
+  {"q":"Voltmetrning xaqiqiy qiymati 220 V o'lchangan qiymati 217 V, voltmetrning nisbiy xatoligini aniqlang:","options":["1,38 %","2,38 %","3,38 %","0,38 %"]},
+  {"q":"Hozirgi zamon elektrokardiograflari o'zining tuzilishi, ishlash printsipi va kanallari miqdoriga qarab qyuidagi guruhlarga bo'linadi:","options":["1 kanalli, 3 kanalli, 6 kanalli, 12 kanallilarga bo'linadi.","4 kanalli, 8 kanalli, 16 kanalli, 32 kanallilarga bo'linadi.","2 kanalli, 4 kanalli, 6 kanalli, 8 kanallilarga bo'linadi.","3 kanalli, 6 kanalli, 9 kanalli, 12 kanallilarga bo'linadi."]},
+  {"q":"Nurlanish termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (5):","options":["-  50°S dan +6000°S gacha","-200°S dan +600°S gacha","- 0°S dan +500°S gacha","0°S dan +1100°S gacha."]},
+  {"q":"Qarshiligi o'zgarmas bo'lgan zanjir uchlaridagi kuchlanish 4 marta oshganda ajralib chiqqan quvvat qanday o'zgaradi:","options":["16 marta oshadi","4 marta oshadi","4 marta kamayadi","16 marta kamayadi"]},
+  {"q":"Galvanometrning aniqlik klassi 0,5 ga teng. Galvanometrning to'g'ri ishlash chegarasidagi maksimal keltirilgan xatolik qiymatini aniqlang:","options":["0,5 %","1,0 %","1,5%","2,5%"]},
+  {"q":"Absolyut xatolikni o'lchov asbobining chegaraviy qiymatyga nisbati bilan aniqlanadigan xatolik","options":["keltirilgan xatolik deb ataladi","absolyut xatolik deb ataladi.","nisbiy xatolik deb ataladi.","Instrumental xatolik deb ataladi"]},
+  {"q":"Elektrokardiograf qurilmalarida tarmoq kabelining klemmalari ranglar bo'yicha ajratilgan:  qizil elektrod qaysi qo'lga yoki oyoqqa ulanadi?","options":["o'ng qo'lga;","chap  qo'lga;","o'ng oyoqga;","chap  oyoqga."]},
+  {"q":"O'lchash chegarasi 25 μA ga teng bo'lgan ampermetrning ko'rsatishi 20 A va o'lchanayotgan tok kuchining xaqiqiy qiymati 19 A ga teng. Ampermetrning keltirilgan xatoligini aniqlang (3):","options":["4,0%","2,0%","3,0%","1,0%"]},
+  {"q":"Absolyut xatolikning kattalikning o'lchangan qiymatiga nisbati bilan aniqlanadigan xatolik…:","options":["Nisbiy xatolik deb ataladi","Absolyut xatolik deb ataladi","Keltirilgan xatolik deb ataladi","Instrumental xatolik deb ataladi"]},
+  {"q":"Vattmetrning ko'rsatishi Wn = 100 vt va o'lchanayotgan quvvatning xaqiqiy qiymati Wnx = 99 vt bo'lganda vattmetrning nisbiy xatoligini aniqlang (2):","options":["1,01 %","2,1 %","2,5 %","1,1 %"]},
+  {"q":"O'lchash chegarasi 200 V ga teng bo'lgan voltmetrning ko'rsatishi 160 V ga  va o'lchanayotgan kuchlanishning xaqiqiy 152 V ga teng voltmetrning keltirilgan xatoligyni aniqlang.","options":["4,0%","2,0%","1,0%","3,0%"]},
+  {"q":"Fizik kattalik birliklarini qayta tiklash va ularni saqlash uchun xizmat qiladigan o'lchov asboblari (3)...","options":["Etalon o'lchov asboblari deb ataladi.","darajalangan o'lchov asboblari deb ataladi.","ishchi o'lchov asboblari deb ataladi.","texnik o'lchov asboblari deb ataladi."]},
+  {"q":"Qaysi termometrlar monometrik termometrlar guruhiga kiradi (2):","options":["Gazli, suyuqlikyi, bug'-suyuqlikli termometrlar.","SHisha termometrlar, dilatometrik va bimetalik termometrlar.","Termoelektrik termometrlar.","Metall o'tkazgichli termometrlar, yarim o'tkazgichli termometrlar."]},
+  {"q":"Elektrokardiograf qurilmalarida tarmoq kabelining klemmalari ranglar bo'yicha ajratilgan:  sariq elektrod qaysi qo'lga yoki oyoqqa ulanadi?","options":["chap  qo'lga;","o'ng qo'lga;","o'ng oyoqga;","chap  oyoqga."]},
+  {"q":"Suyuqlikli termometrlar qaysi diapazondagi haroratni o'lchash uchun mo'ljallangan (3):","options":["– 2000C dan + 6000C gacha","- 00C dan + 5000C gacha","+500C dan + 10000C gacha","-00C dan + 10000C gacha"]},
+  {"q":"Qattiq  jismlar hajmi yoki chiziqli o'lchamlarning o'zgarishiga asoslangan termometrlar (4):","options":["Dilatometrik termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Qarshilik termometrlar"]},
+  {"q":"Elektr qarshilikning o'zgarishiga asoslangan termometlar (4):","options":["Qarshilik termometlari","Nurlanish termometlari","Termoelektr termometlari","Kengayish termometrlari"]},
+  {"q":"Monometrik termometrlar qaysi diapozondagi temperaturani o'lchash uchun mo'ljallangan (3):","options":["- 50 C dan + 1000 C gacha","- 200 C dan + 600 C gacha","0 C dan + 500 C gacha","- 10 C dan + 300 C gacha"]},
+  {"q":"Elektrokardiograf qurilmalarida tarmoq kabelining klemmalari ranglar bo'yicha ajratilgan:  yashil elektrod qaysi qo'lga yoki oyoqqa ulanadi?","options":["chap  oyoqga","chap  qo'lga;","o'ng qo'lga;","o'ng oyoqga;"]},
+  {"q":"Simobli termometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-350C dan +6000C gacha","-2000C dan +6000C gacha","-00C dan +5000C gacha","100C dan +3000C gacha"]},
+  {"q":"Kengayish termometrlarining suyuqligi sifatida qanday ximiyaviy moddalar  ishlatiladi (Kerosin, pentan):","options":["Kerosin, pentan, galliy-indiy - qalay","Suv, yog, azot","Kislorod, ftor, xlor","Geliy, neon, argon"]},
+  {"q":"Chastotaning xaqiyqiy qiymati 50 Grts  o'lchangan qiymati 45 Grts, absolyut xatoligini aniqlang:","options":["2,2 %","2,5 %","2,0 %","3,0 %"]},
+  {"q":"Elektrokardiograf qurilmalarida tarmoq kabelining klemmalari ranglar bo'yicha ajratilgan:  qora elektrod qaysi qo'lga yoki oyoqqa ulanadi?","options":["o'ng oyoqga;","chap  oyoqga","chap  qo'lga;","o'ng qo'lga."]},
+  {"q":"Metallarni chiziqli o'lchamlarini o'zgarishi asosida temperatura o'lchash asboblari:","options":["Dilatometrik termometrlari","manometrik termometrlar","qarshilik termometrlari","-termoelektr termometrlari"]},
+  {"q":"Optik pirometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["700°C dan  6000° C gacha","-200° C dan 600° C gacha","-0° C dan  500° C gacha","10° C dan 300° C gacha"]},
+  {"q":"Kengayish termometrlarining suyuqligi sifatida qanday ximiyaviy moddalar ishlatiladi (Galliy-indiy-qalay):","options":["Galliy-indiy-qalay","Suv, yog', azot","Kislorod, ftor, xlor","Geliy, neon, argon"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning solishtirma qarshiligiga ko'ra o'lchash","options":["Konduktometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Optik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"O'zgarmas tok zanjirida kuchlanish qiymati 15V tok kuchining qiymati 3 A, qarshilikning qiymatini aniqlang:","options":["5 om","3 om","2 om","-15 om"]},
+  {"q":"Qarshiligi o'zgarmas bo'lgan zanjir uchlaridagi kuchlanish 1 marta oshganda ajralib chiqqan quvvat qanday o'zgaradi:","options":["o'zgarmaydi","2 marta oshadi","2 marta kamayadi","4 marta kamayadi"]},
+  {"q":"Yurak biopotensialini o'lchash uchun mo'ljallangan o'lchash asbobi (2) .......","options":["elektrokardiograflar deb ataladi.","elektroensefalograflar deb ataladi.","elektropotensiallar deb ataladi.","magnitoensefalograflar deb ataladi."]},
+  {"q":"Galvonometrning ko'rsatishi 20 mA va o'lchanayotgan tok kuchining haqiqiy qiymati 18 mA bo'lganda, galvanometrning nisbiy xatoligini aniq'lang:","options":["11,11 %","10,5 %","12,0 %","12,1 %"]},
+  {"q":"O'lchash chegarasi 25 A ga teng bo'lgan ampermetrning ko'rsatishi 20 A va o'lchanayotgan tok kuchining xaqiqiy qiymati 17 A ga teng. Ampermetrning keltirilgan xatoligini aniqlang:","options":["6,0%","2,0%","3,0%","4,0%"]},
+  {"q":"Yurak biopotensialini o'lchash uchun mo'ljallangan o'lchash asbobi (3) .......","options":["elektrokardiograflar deb ataladi.","elektroensefalograflar deb ataladi.","elektropotensiallar deb ataladi.","magnitoensefalograflar deb ataladi."]},
+  {"q":"Ulchash chegarasi 50 B ga teng bo'lgan voltmetrning ko'rsatishi 40 B  va ulchanayotgan kuchlanishning  haqiqiy qiymati 38 B ga teng. Voltmetrning  keltirilgan  xatoligyni aniqlang (2):","options":["4,0 %","2,0 %","1,0  %","3,0  %"]},
+  {"q":"O'lchash asbobining o'lchash qiymati 60 Om, o'lchanayotgan qarshilikning qiymati 57 Om ga teng. Ommetrning nisbiy xatoligini aniqlang.","options":["5,2 %","3,2 %","4,2 %","2,2 %"]},
+  {"q":"O'lchash asbobining maksimal o'lchash chegarasi 100 om. Ommetrning keltirilgan xatoligini aniqlang (60 Om o'lchash, 57 Om haqiqiy):","options":["3,0 %","4,0 %","1,0 %","2,0 %"]},
+  {"q":"Fizik kattalik birliklarini qayta tiklash va ularni saqlash uchun xizmat qiladigan o'lchov asboblari (4)....:","options":["Etalon o'lchov asboblari deb ataladi.","ishchi o'lchov asboblari deb ataladi.","namunaviy o'lchov asboblari deb ataladi.","texnik o'lchov asboblari deb ataladi."]},
+  {"q":"Suyuq'likli termometrlar qaysi diapazondagi haroratni o'lchash uchun mo'ljallangan (4):","options":["- 2000C dan  6000C gacha","00C dan   5000C gacha","00C dan  10000C gacha","100C dan  3000C gacha."]},
+  {"q":"Qattiq jismlar hajmi yoki chiziqli o'lchamlarning o'zgarishiga asoslangan termometrlar (5):","options":["Bimetalli termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Qarshilik termometrlar"]},
+  {"q":"Bosh miyadagi elektrik potensiallarni o'lchashga asoslangan usul (2) .......","options":["elektroensefalografiya usuli deb ataladi.","elektrokardiografiya usuli deb ataladi.","elektrobiopotensialografiya usuli deb ataladi.","magnitoensefalografiya usuli deb ataladi."]},
+  {"q":"Elektr qarshilikning o'zgarishiga asoslangan termometlar (5):","options":["Qarshilik termometlari","Nurlanish termometlari","Termoelektr termometlari","Kengayish termometrlari"]},
+  {"q":"Qattiq jismlar hajmi yoki chiziqli o'lchamlarning o'zgarishiga asoslangan termometrlar (6):","options":["Bimetalli termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Qarshilik termometrlar"]},
+  {"q":"Monometrik termometrlar qaysi diapozondagi temperaturani o'lchash uchun mo'ljallangan (4):","options":["- 50 C dan   1000 C gacha","- 200 C dan  600 C gacha","- 0 C dan  500 C gacha","- 260 C dan   1100 C gacha"]},
+  {"q":"O'lchov vositalari asosan  qanday o'lchov asboblariga bo'linadi (2):","options":["etalon, namunaviy, ishchi","ampermetr, voltmetr, ommetr.","o'lchov, standart, namuna.","absolyut, nisbiy, keltirilgan."]},
+  {"q":"Kvazimonoxromatik termometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (2):","options":["700°C dan     6000°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Yurak biopotensialini o'lchashga asoslangan usul (2) .......","options":["elektrokardiografiya usuli deb ataladi.","elektroensefalografiya usuli deb ataladi.","elektrobiopotensialografiya usuli deb ataladi.","magnitoensefalografiya usuli deb ataladi."]},
+  {"q":"Spektral nisbatli pirometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (2):","options":["300°C dan     2800°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"To'liq nurlanishli pirometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-50°C dan     3500°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Metall o'tkazgichli qarshilik termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-260°C dan     1100°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Elektrolit eritmalarining konsentratsiyasini ularning elektr o'tkazuvchanligiga ko'ra o'lchash (2)","options":["Konduktometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Optik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  pH  ko'rsatkichiga  ko'ra o'lchash ...(2):","options":["Potentsiometrik usul deb ataladi,","Optik usul deb ataladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  nur o'tkazish koeffitsientiga   ko'ra o'lchash (2)","options":["spektrofotometrik usul deb ataladi","Patentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  qutblanish tekisligining burilish burchagini o'zgarishiga ko'ra o'lchash ...(2):","options":["Polyarimetrik usul deb ataladi,","Potentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Bosh miyadagi magnit maydoni ta'siridagi o'zgarishlarni o'lchashga asoslangan usul (2) .......","options":["magnitoensefalografiya usuli deb ataladi.","elektroensefalografiya usuli deb ataladi.","elektrokardiografiya usuli deb ataladi.","elektrobiopotensialografiya usuli deb ataladi."]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  nurning sochilishiga ko'ra o'lchash (2)...","options":["Nefelometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"O'zgarmas tok zanjirida kuchlanish qiymati 100 V tok kuchining qiymati 5 A, qarshilikning qiymatini aniqlang:","options":["20  Om","5 Om","10 Om","15om"]},
+  {"q":"Yarim o'tkazgichli qarshilik termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-270°C dan     600°C gacha","-20°C dan    5000°C gacha","-50°C dan    600°C gacha","10°C dan 3000°C gacha"]},
+  {"q":"Termoelektrik termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-200°C dan     2500°C gacha","-20°C dan    5000°C gacha","-50°C dan    600°C gacha","10°C dan 3000°C gacha"]},
+  {"q":"Gazli monometrik termometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-150°C dan     1000°C gacha","-20°C dan    5000°C gacha","-50°C dan    6000°C gacha","10°C dan 3000°C gacha"]},
+  {"q":"Suyuqlikli monometrik termometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-150°C dan     600°C gacha","-20°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Kvazimonoxromatik termometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (3):","options":["700°C dan     6000°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Spektral nisbatli pirometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (3):","options":["300°C dan     2800°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"To'liq nurlanish pirometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (2):","options":["-50°C dan     3500°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning elektr o'tkazuvchanligiga ko'ra o'lchash (3)","options":["Konduktometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Optik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Qarshiligi o'zgarmas bo'lgan zanjir uchlaridagi kuchlanish 3 marta oshganda ajralib chiqqan quvvat qanday o'zgaradi:","options":["9 marta oshadi","9 marta kamayadi","3 marta oshadi","3 marta kamayadi"]},
+  {"q":"Galvanometrning aniqlik klassi 0,2 ga teng. Galvanometrning to'g'ri ishlash chegarasidagi maksimal keltirilgan xatolik qiymatini aniqlang:","options":["0,2 %","1,0 %","1,5%","2,0%"]},
+  {"q":"Radioaktiv nurlarning suyuqlikdan o'tishda yutilishga asoslangan zichlik o'lchagich nomini aniqlang:","options":["Radioizotopli zichlik o'lchagich","Qalqovichli zichlik o'lchagich","Gidrostatik zichlik o'lchagich","Vaznli zichlik o'lchagich"]},
+  {"q":"Kondensasion monometrik termometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan:","options":["-50°C dan     300°C gacha","-20°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"O'lchash chegarasi 25 μA ga teng bo'lgan ampermetrning ko'rsatishi 20 μA va o'lchanaetgan tok kuchining xaqiqiy qiymati 17 μA ga teng. Ampermetrning keltirilgan xatoligini aniqlang:","options":["6,0%","8,0%","5,0%","4,0%"]},
+  {"q":"Odam organizmidagi hosil bo'ladigan har xil fizoilogik jarayonlarni magnit maydoni ta'siridagi o'zgarishlarni o'lchashga asoslangan usul (2) .......  .","options":["magnit-rezonans tamografik usul deb ataladi.","poligrafik usul deb ataladi.","tomografik usul deb ataladi.","pozitron-emission tamografik usul deb ataladi."]},
+  {"q":"To'liq nurlanish pirometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (3):","options":["-  50°S dan +3500°S gacha","-200°S dan +600°S gacha","10°S dan +300°S gacha","0°S dan +1100°S gacha."]},
+  {"q":"Eritmalarining kontsentratsiyasini ularning nur o'tkazuvchanlik koeffitsientini o'lchashga asosan aniqlash usuli …………..","options":["Spektrofotometrik usul deb ataladi,","Potentsiometrik usul deb ataladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Voltmetr zanjirdagi kuchlanishni to'g'ri o'lchashi uchun zanjirga qanday ulanadi:","options":["Parallel","Ketma-ket","Aralash","Parallel va ketma-ket"]},
+  {"q":"Qarshiligi o'zgarmas bo'lgan zanjir uchlaridagi kuchlanish ikki marta oshganda ajralib chiqqan quvvat qanday o'zgaradi (3):","options":["4 marta oshadi","2 marta kamayadi","2 marta oshadi","4 marta kamayadi"]},
+  {"q":"Vaznli zichlik o'lchagichlar qaysi diapazondagi suyuqliklarni zichligini o'lchash uchun mo'ljallangan?","options":["500   -   2500 kg/m3   oralig'idagi zichlikni o'lchash uchun mo'ljallangan.","100   -   250 kg/m3   oralig'idagi zichlikni o'lchash uchun mo'ljallangan.","200   - 500 kg/m3   oralig'idagi zichlikni o'lchash uchun mo'ljallangan.","300   -   1000 kg/m3   oralig'idagi zichlikni o'lchash uchun mo'ljallangan."]},
+  {"q":"Radioaktiv nurlarning suyuqlikdan o'tishda yutilishga asoslangan zichlik o'lchagich nomini aniqlang (2):","options":["Radioizotopli zichlik o'lchagich","Qalqovichli zichlik o'lchagich","Gidrostatik zichlik o'lchagich","Vaznli zichlik o'lchagich"]},
+  {"q":"Qalqovichli zichlik o'lchagichlar qaysi diapazondagi suyuqliklarni zichligini o'lchash uchun mo'ljallangan?","options":["1000   -   1400 kg/m3   oralig'idagi zichlikni o'lchash uchun mo'ljallangan.","100   -   250 kg/m3   oralig'idagi zichlikni o'lchash uchun mo'ljallangan.","200   - 500 kg/m3   oralig'idagi zichlikni o'lchash uchun mo'ljallangan.","300   -   1000 kg/m3   oralig'idagi zichlikni o'lchash uchun mo'ljallangan."]},
+  {"q":"Qalqovichli zichlik o'lchagichlarning yo'l qo'yishi mumkin bo'lgan xatolik darajasi necha foizni tashkil qiladi?","options":["± 2 foizni tashkil qiladi","± 0,05 foizni tashkil qiladi","± 0,5 foizni tashkil qiladi","± 1 foizni tashkil qiladi"]},
+  {"q":"Vaznli zichlik o'lchagichlarning yo'l qo'yishi mumkin bo'gan maksimal xatolik darajasi necha foizni tashkil qiladi?","options":["± 2 foizni tashkil qiladi","± 1,5 foizni tashkil qiladi","± 0,5 foizni tashkil qiladi","± 3 foizni tashkil qiladi"]},
+  {"q":"O'lchash chegarasi 50 μA ga teng bo'lgan ampermetrning ko'rsatishi 40 A va o'lchanayotgan tok kuchining xaqiqiy qiymati 38 A ga teng. Ampermetrning keltirilgan xatoligini aniqlang:","options":["4,0%","2,0%","3,0%","5,0%"]},
+  {"q":"Sharikli viskozsmetr bo'yicha aniqlanishi mumkin bo'lgan qovushqoqlikni chegarasini aniqlab bering (2):","options":["0,01 dan 100 Pa  s gacha.","0,001 dan 10 Pa  s gacha.","0,01 dan 1000 Pa  s gacha.","0,001 dan 0.1 Pa  s gacha."]},
+  {"q":"Absolyut xatolikni o'lchash asbobini maksimal o'lchash chegarasiga nisbati bilan aniqlanadigan xatolik…:","options":["Keltirilgan xatolik deb ataladi","Absolyut xatolik deb ataladi","Nisbiy xatolik deb ataladi","Instrumental xatolik deb ataladi"]},
+  {"q":"Vattmetrning ko'rsatishi Wn = 50 vt va o'lchanayotgan quvvatning xaqiqiy qiymati Wnx = 48 vt bo'lganda vattmetrning nisbiy xatoligini aniqlang:","options":["4,16 %","2,15 %","2,50 %","1,00  %"]},
+  {"q":"O'lchash chegarasi 200 V ga teng bo'lgan voltmetrning ko'rsatishi 180 V ga va o'lchanayotgan kuchlanishning xaqiqiy 177 V ga teng voltmetrning keltirilgan xatoligyni aniqlang.","options":["1,5%","2,5%","4,5%","6,5%"]},
+  {"q":"Yurak biopotensialini o'lchashdagi  natija qanday nomlanadi (2).","options":["elektrokardiogramma deb ataladi.","elektroensefalogramma deb ataladi.","elektrobiopotensialogramma deb ataladi.","magnitoensefalogramma deb ataladi"]},
+  {"q":"Qaysi termometrlar monometrik termometrlar guruhiga kiradi (3):","options":["Gazli, suyuqlikyi, bug'-suyuqlikli termometrlar.","Shisha termometrlar, dilatometrik va bimetalik termometrlar.","Termoelektrik termometrlar.","Metall o'tkazgichli termometrlar, yarim o'tkazgichli termometrlar."]},
+  {"q":"Elektrolit eritmalarining konsentratsiyasini ularning elektr utkazuvchanligiga ko'ra o'lchash ……..","options":["Konduktometrik usul deb ataladi,","Patensiometrik usul deb aytiladi,","Optik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"O'lchov asboblaridan 0,5 aniqlik klassiga ega bo'lgan o'lchash asboblari necha foyizgacha keltirilgan xatolikka yo'l qo'yishi mumkin:","options":["0,5 %  gacha","0,1 %  gacha","0,05 %  gacha","- 0,01 %  gacha"]},
+  {"q":"O'lchov asboblaridan 0,05 aniqlik klassiga ega bo'lgan o'lchash asboblari necha foyizgacha keltirilgan xatolikka yo'l qo'yishi mumkin:","options":["0,05 %  gacha","0,5 %  gacha","0,1 %  gacha","0,01 %  gacha"]},
+  {"q":"Kvazimonoxromatik termometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (4):","options":["700°C dan     6000°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Spektral nisbatli pirometrlar qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (4):","options":["300°C dan     2800°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"To'liq nurlanish pirometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (4):","options":["-50°C dan     3500°C gacha","-0°C dan    500°C gacha","-50°C dan    600°C gacha","10°C dan 300°C gacha"]},
+  {"q":"O'zgarmas tok zanjirida kuchlanish qiymati 40 V tok kuchining qiymati 5A, qarshilikning qiymatini aniqlang (2):","options":["8 om","10 om","5 om","15om"]},
+  {"q":"Qarshiligi o'zgarmas bo'lgan zanjir uchlaridagi kuchlanish 5 marta oshganda ajralib chiqqan quvvat qanday o'zgaradi (2):","options":["25  marta oshadi","25 marta kamayadi","5  marta oshadi","5 marta kamayadi"]},
+  {"q":"Kappilyar viskozimetri bo'yicha aniqlanishi mumkin bo'lgan qovushqoqlikning chegarasini aniqlab bering (3):","options":["0,001 dan 10 Pas gacha","0,1 dan 100 Pa s gacha","0,01 dan 1000 Pas gacha","0,001 dan 0,1 Pas gacha"]},
+  {"q":"Galvanometrning aniqlik klassi 0,01 ga teng. Galvanometrning to'g'ri ishlash chegarasidagi maksimal keltirilgan xatolik qiymatini aniqlang (3):","options":["0,01 %","0,05 %","0,1 %","0,5 %"]},
+  {"q":"Radijaktiv nurlarning suyuqlikdan o'tishda yutilishga asoslangan zichlik o'lchagich nomini aniqlang (2):","options":["Radioizotopli zichlik o'lchagich","Qalqovichli zichlik o'lchagich","Gidrostatik zichlik o'lchagich","Vaznli zichlik o'lchagich"]},
+  {"q":"Galvonometrning ko'rsatishi 100 mA va o'lchanayotgan tok kuchining haqiqiy qiymati 98 mA bo'lganda, galvanometrning nisbiy xatoligini aniq'lang (2):","options":["2,04%","1,5%","2,0%","2,1%"]},
+  {"q":"Absolyut xatolikni o'lchov asbobining chegaraviy qiymatyga nisbati bilan aniqlanadigan xatolik ...:(2)","options":["keltirilgan xatolik deb ataladi","absolyut xatolik deb ataladi.","nisbiy xatolik deb ataladi.","Instrumental xatolik deb ataladi"]},
+  {"q":"O'lchash chegarasi 25 A ga teng bo'lgan ampermetrning ko'rsatishi 20 A va o'lchanayotgan tok kuchining xaqiqiy qiymati 18 A ga teng. Ampermetrning keltirilgan xatoligini aniqlang (2):","options":["8,0%","3,0%","4,0%","6,0%"]},
+  {"q":"Sharikli viskozsmetr bo'yicha aniqlanishi mumkin bo'lgan qovushqoqlikni chegarasini aniqlab bering (3):","options":["0,001dan 10 Pa  s gacha.","0,1 dan 100 Pa  s gacha.","0,01 dan 1000 Pa  s gacha.","0,001 dan 0.1 Pa  s gacha."]},
+  {"q":"Vattmetrning ko'rsatishi Wn= 100 vt va o'lchanayotgan quvvatning haqiqiy qiymati Wnx = 98 vt bo'lganda vattmetrning nisbiy xatoligini aniqlang (2):","options":["2,04%","1,5 %","2,1 %","2,5 %"]},
+  {"q":"O'lchash chegarasi 50 V ga teng bo'lgan voltmetrning ko'rsatishi 40 V  va o'lchanayotgan kuchlanishning  haqiqiy qiymati 38 V ga teng. Voltmetrning  keltirilgan  xatoligyni aniqlang (2):","options":["4,0%","2,0%","6,0%","8,0%"]},
+  {"q":"Qattiq jismlar hajmi yoki chiziqli o'lchamlarning o'zgarishiga asoslangan termometrlar (7):","options":["Dilatometrik termometrlar","Monometrik termometrlar","Termoelektr termometrlar","Qarshilik termometrlar"]},
+  {"q":"Elektr qarshilikning o'zgarishiga asoslangan termometlar (6):","options":["Qarshilik termometlari","Nurlanish termometlari","Termoelektr termometlari","Kengayish termometrlari"]},
+  {"q":"Monometrik termometrlar qaysi diapozondagi temperaturani o'lchash uchun mo'ljallangan (5):","options":["- 50 C dan   1000 C gacha","- 200 0C dan  600 0C gacha","0 C dan  500 C gacha","- 260 C dan   1100 C gacha"]},
+  {"q":"Hozirgi zamon elektrokardiograflari o'zining tuzilishi, ishlash printsipi va kanallari miqdoriga qarab qanday guruhlarga bo'linadi (2)?","options":["1 kanalli, 3 kanalli, 6 kanalli, 12 kanallilarga bo'linadi.","4 kanalli, 8 kanalli, 16 kanalli, 32 kanallilarga bo'linadi.","2 kanalli, 4 kanalli, 6 kanalli, 8 kanallilarga bo'linadi.","3 kanalli, 6 kanalli, 9 kanalli, 12 kanallilarga bo'linadi."]},
+  {"q":"Nurlanish termometrlari qaysi diapazondagi temperaturani o'lchash uchun mo'ljallangan (6):","options":["-50°C dan    6000°C gacha","-200°C dan     600°C gacha","-0°C dan    500°C gacha","10°C dan 300°C gacha"]},
+  {"q":"Elektrokardiograf qurilmalarida tarmoq kabelining klemmalari ranglar bo'yicha ajratilgan:  qizil elektrod qaysi qo'lga yoki oyoqqa ulanadi (2)?","options":["o'ng qo'lga;","chap  qo'lga;","o'ng oyoqga;","chap  oyoqga."]},
+  {"q":"Suyuqlikning ma'lum bir doimiy xajmining vaznini uzluksiz tortib turishga asoslangan zichlik o'lchagich nomini aniqlang (2):","options":["Vaznli zichlik o'lchagich","Qalqovichli zichlik o'lchagich","Gidrositatik zichlik o'lchagich","Radioizotopik zichlik o'lchagich"]},
+  {"q":"Elektrolit eritmalarining konsentratsiyasini ularning elektr o'tkazuvchanligiga ko'ra o'lchash (4)","options":["Konduktometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Optik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  pH  ko'rsatkichiga  ko'ra o'lchash ...(3):","options":["Potentsiometrik usul deb ataladi,","Optik usul deb ataladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  nur o'tkazish koeffitsientiga   ko'ra o'lchash ...(3):","options":["Spektrofotometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  qutblanish tekisligini burilish burchagini o'lchashga asoslangan usul ...(3):","options":["polyarimetrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrolit eritmalarining kontsentratsiyasini ularning  nurning sochilishiga    ko'ra o'lchash ..(2)","options":["Nefelometrik usul deb ataladi,","Patentsiometrik usul deb aytiladi,","Konduktometrik usul deb ataladi,","Avtomatik usul deb ataladi,"]},
+  {"q":"Elektrokardiograf qurilmalarida tarmoq kabelining klemmalari ranglar bo'yicha ajratilgan:  sariq elektrod qaysi qo'lga yoki oyoqqa ulanadi (2)?","options":["chap  qo'lga;","o'ng qo'lga;","o'ng oyoqga;","chap  oyoqga."]},
+  {"q":"Elektrokardiograf qurilmalarida tarmoq kabelining klemmalari ranglar bo'yicha ajratilgan:  yashil elektrod qaysi qo'lga yoki oyoqqa ulanadi (2)?","options":["chap  oyoqga","chap  qo'lga;","o'ng qo'lga;","o'ng oyoqga;"]},
+  {"q":"Elektrokardiograf qurilmalarida tarmoq kabelining klemmalari ranglar bo'yicha ajratilgan:  qora elektrod qaysi qo'lga yoki oyoqqa ulanadi (2)?","options":["o'ng oyoqga;","chap  oyoqga","chap  qo'lga;","o'ng qo'lga."]}
+];
+
+</script>
+</body>
+</html>
+
+</script>
+</body>
+</html>
